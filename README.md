@@ -1,2 +1,1 @@
-# bumble-bat
-Dave vs. Nate
+#bumble-bat

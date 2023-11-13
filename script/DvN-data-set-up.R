@@ -19,7 +19,7 @@ library(ggplot2)
 source('script/DvN-functions.R')
 
 #raw dataframe
-diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-11-10.csv",sep=",",dec=".",
+diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-11-13.csv",sep=",",dec=".",
                   row.names = 1,
                   encoding = "UTF-8")
 

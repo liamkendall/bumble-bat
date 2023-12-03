@@ -2,3 +2,6 @@
 .Rhistory
 .RData
 .Ruserdata
+data/DVN_Missing_dependency.csv
+data/DVN_Missing_dependency.xlsx
+data/missing dependency.csv

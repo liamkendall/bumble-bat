@@ -152,13 +152,16 @@ ggplot(data=diel.out,
   facet_wrap(~treatment_effectiveness_metric,scales="free")
 
 #Imputed values make sense (but definitely some different scales going on)
+source('script/DvN-phylogeny-set-up.R')
 
 #Widen dataframe
-diel.final=diel.sd %>%   
+diel.final=diel.out %>%   
   select(study_ID, 
+         country,
          Site_period, 
          year_start,
          month_start,
+         month_end,
          coordinates_lat,
          coordinates_lon,
          plant_species,
@@ -168,8 +171,40 @@ diel.final=diel.sd %>%
          treatment_condition,
          sample_size,
          effectiveness_value,
-         SDc)
+         SDc) %>% 
+  left_join(plant.taxonomy.df,by=c("plant_species" = "old_name")) %>% 
+  mutate(phylo=gsub(" ","_",accepted_name)) %>% 
+  relocate(accepted_name:phylo,.after=plant_species) #%>% glimpse
+
+###manual fix of ipomoea aff.
+sum(is.na(diel.final$accepted_name)) #7
+
+diel.final$accepted_name=ifelse(diel.final$plant_species%in%"Ipomoea aff. Marcellia",
+                                "Ipomoea aff. marcellia",diel.final$accepted_name)
+
+diel.final$phylo=ifelse(diel.final$plant_species%in%"Ipomoea aff. Marcellia",
+                                "Ipomoea_aff._marcellia",diel.final$phylo)
+
+#####add environmental co-variates
+list.files("data/")
+temperature.range=read.csv("data/DvN_Site_DailyTemperatureRange.csv",row.names = 1)
+day.length=read.csv("data/DvN_Site_Daylength.csv",row.names = 1) %>% 
+  mutate(year_start=as.integer(year_start))
+
+#View(temperature.range)
+
+environment=temperature.range %>% 
+  left_join(day.length,
+            by=c("study_ID","coordinates_lat","coordinates_lon","country",
+                 "year_start","month_start","month_end")) %>% 
+  mutate(year_start=as.character(year_start)) 
 
 
+diel.env.final=diel.final %>% 
+  left_join(environment,
+            by=c("study_ID","coordinates_lat","coordinates_lon","country",
+                 "year_start","month_start","month_end")) %>% #glimpse
+  relocate(midDate:Daylength,.after=coordinates_lon)
 
 
+plot(diel.env.final$Daylength,diel.env.final$DTR)

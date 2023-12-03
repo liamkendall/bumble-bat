@@ -2,7 +2,7 @@
 ###Effect size calculations###
 ##############################
 
-diel.es=diel.final %>%  
+diel.es=diel.env.final %>%  
   group_by(study_ID, 
            Site_period, 
            year_start,
@@ -10,11 +10,14 @@ diel.es=diel.final %>%
            coordinates_lat,
            coordinates_lon,
            plant_species,
+           accepted_name,
            plant_cultivar, 
            additional_treatment) %>% 
   pivot_wider(names_from = treatment_condition,
               values_from=c(sample_size,SDc,effectiveness_value)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(effect_ID=1:n()) %>% 
+  relocate(effect_ID,.after = study_ID)
 
 ##non-nestedness of D v. N comes from site_periods/other treatments 
 ##where they did something else there (hand-pollination) but not D v. N
@@ -78,7 +81,9 @@ diel.es.out=cbind(diel.es,
 
 ##then subset at your leisure
 day.night.df=diel.es.out %>% 
-  filter(!is.na(SMD.dn))
+  filter(!is.na(SMD.dn)) %>% 
+  rename(yi=SMD.dn,
+         vi=VI.dn)
 
 open.day.df=diel.es.out %>% 
   filter(!is.na(SMD.od))

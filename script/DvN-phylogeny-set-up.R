@@ -41,7 +41,8 @@ plant.traits.df=diel.raw %>%
 plant.taxonomy.df=plants.wfo.one%>% 
   rename(old_name=plant_species,
          accepted_name=scientificName,
-         family=family) 
+         family=family) %>% 
+  mutate(accepted_name=word(accepted_name,1,2,sep=" "))
 
 ###manual fix for aff. marcellia
 plant.taxonomy.df$accepted_name=ifelse(duplicated(plant.taxonomy.df$accepted_name),
@@ -52,6 +53,7 @@ plant.taxonomy.df$accepted_name=ifelse(duplicated(plant.taxonomy.df$accepted_nam
 
 #tree
 dn.tree = get_tree(sp_list = plant.taxonomy.df%>% 
+                     filter(!duplicated(accepted_name)) %>% 
                      rename(species=accepted_name),
                    taxon = "plant",
                    scenario = "at_basal_node",

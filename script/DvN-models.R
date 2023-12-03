@@ -67,6 +67,11 @@ diel.ss$lDaylength=log(diel.ss$Daylength)
 
 forest(diel.ss$yi,diel.ss$vi)
 
+forest(day.night.df$yi,
+       day.night.df$vi)
+
+day.night.df
+
 ########
 #fruit set models
 ########
@@ -309,12 +314,12 @@ diel.ss.tree=drop.tip(dn.tree, setdiff(dn.tree$tip.label,
 diel_ss_vcv <- vcv(diel.ss.tree, cor = T)
 ###
 
-diel_ss_mod_1 <- rma.mv(yi = yi, V = vi, mods = ~ treatment_condition,
+diel_ss_mod_1 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID), 
                              data = diel.ss)
 summary(diel_ss_mod_1)
 
-diel_ss_mod_2 <- rma.mv(yi = yi, V = vi, mods = ~ treatment_condition,
+diel_ss_mod_2 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID), 
                              data = diel.ss)
@@ -323,7 +328,7 @@ AIC(diel_ss_mod_1,
 
 summary(diel_ss_mod_2)
 
-diel_ss_mod_3 <- rma.mv(yi = yi, V = vi, mods = ~ treatment_condition,
+diel_ss_mod_3 <- rma.mv(yi = yi, V = vi,# mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID,
                                             ~ 1 | phylo), 
@@ -336,30 +341,29 @@ AIC(diel_ss_mod_1,
     diel_ss_mod_3)
 
 #phylo does not improve it
-diel_ss_mod_4 <- rma.mv(yi = yi, V = vi, mods = ~ treatment_condition,
+diel_ss_mod_4 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID,
                                             #~ 1 | phylo,
-                                            ~ 1 | label),  # non-phylogenetic species effect
+                                            ~ 1 | family),  # non-phylogenetic species effect
                              #  R = list(phylo = diel_ss_vcv),
                              data = diel.ss)
 
 summary(diel_ss_mod_4)
 
 AIC(diel_ss_mod_4,
-    diel_ss_mod_3,
+    #diel_ss_mod_3,
     diel_ss_mod_2,
     diel_ss_mod_1)
 
 ###no overall effect
 ###low effect of phylogeny
-open_ss_model <- mod_results(diel_ss_mod_2, 
-                             group = "study_ID", 
-                             mod = "treatment_condition")
+ss_model <- mod_results(diel_ss_mod_4, 
+                             group = "study_ID")
 
-open_ss_orchard=orchard_plot(open_ss_model, xlab = "Standardised Mean Difference")
+ss_orchard=orchard_sans_pi(ss_model, xlab = "Standardised Mean Difference")
 
-open_ss_orchard
+ss_orchard
 
 ####add co-variates
 diel_open_ss_sEnv_mod_1 <- rma.mv(yi = yi, V = vi,mods = ~ treatment_condition *  

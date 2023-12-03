@@ -48,3 +48,11 @@ plant.taxonomy.df$accepted_name=ifelse(duplicated(plant.taxonomy.df$accepted_nam
        "Ipomoea aff. marcellia",
        plant.taxonomy.df$accepted_name)
 
+#####phylogeny
+
+#tree
+dn.tree = get_tree(sp_list = plant.taxonomy.df%>% 
+                     rename(species=accepted_name),
+                   taxon = "plant",
+                   scenario = "at_basal_node",
+                   show_grafted = F)

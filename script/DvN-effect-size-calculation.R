@@ -2,7 +2,7 @@
 ###Effect size calculations###
 ##############################
 
-diel.es=diel.env.final[-c(690,696,702,708),] %>%  
+diel.es=diel.env.final.out %>%  
   group_by(study_ID, 
            Site_period, 
            year_start,
@@ -90,3 +90,11 @@ open.day.df=diel.es.out %>%
 
 open.night.df=diel.es.out %>% 
   filter(!is.na(SMD.on))
+
+
+###effect size dataframes as a list then saved as an rData file in the data folder
+es.list=list(day.night.df,open.day.df,open.night.df,dn.tree)
+
+#name list elements
+names(es.list)=c("day.night.df","open.day.df","open.night.df","phylo")
+save(es.list,file="data/effect_size_dataframes.rData")

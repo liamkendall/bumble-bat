@@ -19,7 +19,7 @@ library(ggplot2)
 source('script/DvN-functions.R')
 
 #raw dataframe
-diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-12-06.csv",sep=";",dec=".",
+diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-12-07.csv",#sep=";",dec=".",
                   row.names = 1,
                   encoding = "UTF-8")
 
@@ -173,25 +173,25 @@ diel.final=diel.out %>%
 #Imputed values make sense (but definitely some different scales going on)
 source('script/DvN-phylogeny-set-up.R')
 
-diel.final=diel.final%>% 
-  left_join(plant.taxonomy.df,by=c("plant_species" = "old_name")) %>% 
+diel.final.out=diel.final%>% 
+  left_join(plant.taxonomy.df.out,by=c("plant_species" = "old_name")) %>% 
   mutate(phylo=gsub(" ","_",accepted_name)) %>% 
   relocate(accepted_name:phylo,.after=plant_species) #%>% glimpse
 
 ###manual fix of ipomoea aff.
-sum(is.na(diel.final$accepted_name)) #7
+sum(is.na(diel.final.out$accepted_name)) #7
 
-diel.final$accepted_name=ifelse(diel.final$plant_species%in%"Ipomoea aff. Marcellia",
-                                "Ipomoea aff. marcellia",diel.final$accepted_name)
+diel.final.out$accepted_name=ifelse(diel.final.out$plant_species%in%"Ipomoea aff. Marcellia",
+                                "Ipomoea aff-marcellia",diel.final.out$accepted_name)
 
-diel.final$phylo=ifelse(diel.final$plant_species%in%"Ipomoea aff. Marcellia",
-                                "Ipomoea_aff._marcellia",diel.final$phylo)
+diel.final.out$phylo=ifelse(diel.final.out$plant_species%in%"Ipomoea aff. Marcellia",
+                                "Ipomoea_aff-marcellia",diel.final.out$phylo)
 
 #####add environmental co-variates
 list.files("data/")
 temperature.range=read.csv("data/DvN_Site_DailyTemperatureRange.csv",row.names = 1)
-day.length=read.csv("data/DvN_Site_Daylength.csv",row.names = 1) %>% 
-  mutate(year_start=as.integer(year_start))
+day.length=read.csv("data/DvN_Site_Daylength.csv",row.names = 1)%>% 
+  mutate(year_start=as.integer(year_start)) 
 
 #View(temperature.range)
 
@@ -201,12 +201,18 @@ environment=temperature.range %>%
                  "year_start","month_start","month_end")) %>% 
   mutate(year_start=as.character(year_start)) 
 
-
-diel.env.final=diel.final %>% 
+diel.env.final=diel.final.out %>% 
   left_join(environment,
             by=c("study_ID","coordinates_lat","coordinates_lon","country",
                  "year_start","month_start","month_end")) %>% #glimpse
   relocate(midDate:Daylength,.after=coordinates_lon)
 
+###add traits dataframe to diel.env.final
+source("script/DvN-trait-set-up.R")
 
-plot(diel.env.final$Daylength,diel.env.final$DTR)
+diel.env.final.out=diel.env.final %>% 
+  left_join(traits %>% 
+              mutate(accepted_name=rownames(traits)),
+            by=c("accepted_name")) #%>% 
+  #relocate(plant_height:pollinator_dependence,.after=Daylength)
+

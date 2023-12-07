@@ -1,7 +1,8 @@
 
 day.night.df2=day.night.df %>% 
   filter(!is.na(Daylength)) %>% 
-  filter(!is.na(DTR))
+  filter(!is.na(DTR)) %>% 
+  filter(!yi>5)
 
 ###set up phylo
 day.night.df2$phylo=gsub(" ","_",day.night.df2$accepted_name)
@@ -41,11 +42,10 @@ AIC(diel_both_mod_1,
 diel_both_mod_4 <- rma.mv(yi = yi, V = vi, mods = ~ treatment_effectiveness_metric,
                         random = list( ~ 1 | study_ID, 
                                        ~ 1 | effect_ID,
-                                       #~ 1 | phylo,
+                                       ~ 1 | phylo,
                                        ~ 1 | accepted_name),  # non-phylogenetic species effect
-                      #    R = list(phylo = diel_both_vcv),
-                        data = day.night.df2 %>% 
-                        filter(!yi>5))
+                          R = list(phylo = diel_both_vcv),
+                        data = day.night.df2)
 
 summary(diel_both_mod_4)
 
@@ -58,7 +58,7 @@ both_model <- mod_results(diel_both_mod_4,
                              group = "study_ID", 
                              mod = "treatment_effectiveness_metric")
 
-both_orchard=orchard_plot(both_model, xlab = "Standardised Mean Difference")
+both_orchard=orchard_sans_pi(both_model, xlab = "Standardised Mean Difference")
 
 both_orchard
 
@@ -72,27 +72,28 @@ diel_both_sEnv_mod_1 <- rma.mv(yi = yi, V = vi,
                                  sDaylength,
                                random = list( ~ 1 | study_ID, 
                                               ~ 1 | effect_ID, 
-                            #                  ~ 1 | phylo,
+                                              ~ 1 | phylo,
                                               ~ 1 | accepted_name), 
-                            #   R = list(phylo = diel_both_vcv),
+                               R = list(phylo = diel_both_vcv),
                                data = day.night.df2)
-
-summary(diel_both_sEnv_mod_1)
 
 AIC(diel_both_sEnv_mod_1,
     diel_both_mod_4)
 
+summary(diel_both_sEnv_mod_1)
+
 diel_both_sEnv_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~ treatment_effectiveness_metric*sDaylength, 
                                   random = list( ~ 1 | study_ID, 
                                                  ~ 1 | effect_ID, 
+                                                 ~ 1 | phylo,
                                                  ~ 1 | accepted_name), 
-                                  #R = list(phylo = diel_fs_vcv),
+                                  R = list(phylo = diel_both_vcv),
                                   data = day.night.df2)
-summary(diel_both_sEnv_mod_2)
 
 AIC(diel_both_sEnv_mod_1,
     diel_both_sEnv_mod_2)
 
+summary(diel_both_sEnv_mod_2)
 
 fs_DTR_bubble <- mod_results(diel_open_fs_sEnv_mod_2, mod = "sDTR", 
                              group = "study_ID",

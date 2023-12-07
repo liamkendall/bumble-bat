@@ -13,7 +13,7 @@ library(orchaRd)
 
 diel.fs=day.night.df %>% 
   filter(treatment_effectiveness_metric%in%"fruit set") %>% #View
-  #filter(!effect_ID%in%c(47,48)) %>% 
+  filter(!effect_ID%in%c(47,48)) %>% 
   filter(!is.na(yi)) %>%
   filter(!is.na(DTR)) %>% #7
   filter(!is.na(Daylength))%>% #dim
@@ -44,7 +44,7 @@ forest(diel.fs$yi,diel.fs$vi)
 
 diel.ss=day.night.df %>% 
   filter(treatment_effectiveness_metric%in%"seed set")%>% 
-  #filter(!effect_ID%in%175)%>% 
+  filter(!effect_ID%in%175)%>% 
   filter(!is.na(DTR)) %>% #4
   filter(!is.na(Daylength))%>% #dim
   group_by(study_ID,
@@ -62,8 +62,6 @@ diel.ss=day.night.df %>%
 
 diel.ss$sDTR=as.numeric(scale(diel.ss$DTR))
 diel.ss$sDaylength=as.numeric(scale(diel.ss$Daylength))
-diel.ss$lDTR=log(diel.ss$DTR)
-diel.ss$lDaylength=log(diel.ss$Daylength)
 
 forest(diel.ss$yi,diel.ss$vi)
 
@@ -113,9 +111,9 @@ AIC(diel_fs_mod_1,
 diel_fs_mod_4 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID,
-                                            #~ 1 | phylo,
+                                            ~ 1 | phylo,
                                             ~ 1 | accepted_name),  # non-phylogenetic species effect
-                             #  R = list(phylo = diel_fs_vcv),
+                               R = list(phylo = diel_fs_vcv),
                              data = diel.fs)
 
 summary(diel_fs_mod_4)
@@ -124,24 +122,6 @@ AIC(diel_fs_mod_4,
     diel_fs_mod_3,
     diel_fs_mod_2,
     diel_fs_mod_1)
-
-#phylo does not improve it
-diel_fs_mod_5 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
-                        random = list( ~ 1 | study_ID, 
-                                       ~ 1 | effect_ID,
-                                       ~ 1 | phylo,
-                                       ~ 1 | accepted_name),  # non-phylogenetic species effect
-                          R = list(phylo = diel_fs_vcv),
-                        data = diel.fs)
-
-summary(diel_fs_mod_5)
-
-AIC(diel_fs_mod_5,
-    diel_fs_mod_4,
-    diel_fs_mod_3,
-    diel_fs_mod_2,
-    diel_fs_mod_1)
-
 
 ###no overall effect
 ###low effect of phylogeny
@@ -165,51 +145,34 @@ diel_fs_sEnv_mod_1 <- rma.mv(yi = yi, V = vi,mods = ~ #treatment_condition *
                                                  ~ 1 | phylo), 
                                   R = list(phylo = diel_fs_vcv),
                                   data = diel.fs)
-summary(diel_open_fs_sEnv_mod_1)
+summary(diel_fs_sEnv_mod_1)
 
 AIC(diel_fs_sEnv_mod_1,
     diel_fs_mod_2)
 
-diel.fs$lDTR=log(diel.fs$DTR)
-diel.fs$lDaylength=log(diel.fs$Daylength)
-
-diel_fs_logEnv_mod_1 <- rma.mv(yi = yi, V = vi,mods = ~ #treatment_condition *
-                                      lDTR*
-                                      lDaylength,
-                                    random = list( ~ 1 | study_ID, 
-                                                   ~ 1 | effect_ID, 
-                                                   ~ 1 | phylo), 
-                                    R = list(phylo = diel_fs_vcv),
-                                    data = diel.fs)
-summary(diel_fs_logEnv_mod_1)
-
-AIC(diel_fs_sEnv_mod_1,
-    diel_fs_logEnv_mod_1,
-    diel_fs_mod_2)
-
-diel_open_fs_sEnv_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~ sDTR, 
+diel_fs_sEnv_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~ sDTR,#+I(sDTR^2), 
                                   random = list( ~ 1 | study_ID, 
                                                  ~ 1 | effect_ID, 
                                                  ~ 1 | phylo), 
                                   R = list(phylo = diel_fs_vcv),
                                   data = diel.fs)
-summary(diel_open_fs_sEnv_mod_2)
+summary(diel_fs_sEnv_mod_2)
 
-AIC(diel_open_fs_sEnv_mod_1,
-    diel_open_fs_sEnv_mod_2)
+AIC(diel_fs_sEnv_mod_1,
+    diel_fs_sEnv_mod_2)
 
 
-diel_open_fs_logEnv_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~  lDTR, 
+diel_fs_sEnv_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~  sDaylength,#+I(sDaylength^2), 
                                     random = list( ~ 1 | study_ID, 
                                                    ~ 1 | effect_ID, 
                                                    ~ 1 | phylo), 
                                     R = list(phylo = diel_fs_vcv),
                                     data = diel.fs)
-summary(diel_open_fs_logEnv_mod_2)
+summary(diel_fs_sEnv_mod_3)
 
-AIC(diel_open_fs_sEnv_mod_1,
-    diel_open_fs_sEnv_mod_2,
-    diel_open_fs_logEnv_mod_2)
+AIC(diel_fs_sEnv_mod_1,
+    diel_fs_sEnv_mod_2,
+    diel_fs_sEnv_mod_3)
 
 fs_DTR_bubble <- mod_results(diel_open_fs_sEnv_mod_2, mod = "sDTR", 
                              group = "study_ID",
@@ -230,8 +193,8 @@ diel.fs$sYear=scale(as.numeric(diel.fs$year_start))
 
 #correalted with daylength but not DTR
 
-diel_open_fs_sEnv_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~  (sDTR+I(sDTR^2))*
-                                    (abs.lat+I(abs.lat^2)), 
+diel_fs_sEnv_mod_4 <- rma.mv(yi = yi, V = vi,mods = ~  #(sDTR+I(sDTR^2))*
+                                    abs.lat,#+I(abs.lat^2)), 
                                     random = list( ~ 1 | study_ID, 
                                                    ~ 1 | effect_ID, 
                                                    ~ 1 | phylo), 
@@ -240,12 +203,12 @@ diel_open_fs_sEnv_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~  (sDTR+I(sDTR^2))*
 AIC(diel_open_fs_sEnv_mod_3,
     diel_open_fs_sEnv_mod_2)
 
-summary(diel_open_fs_sEnv_mod_3)
+summary(diel_fs_sEnv_mod_4)
 
 ####try with pollination dependency
 diel.fs.pd = diel.fs %>% 
-  left_join(diel.fs.pd.imp.out) %>% 
-  filter(!is.na(iPd))
+  left_join(diel.pd.out) %>% 
+  filter(!is.na(pd))
 
 diel.fs.pd.species=diel.fs.pd$phylo
 diel.fs.pd.tree=drop.tip(dn.tree, setdiff(dn.tree$tip.label,
@@ -260,8 +223,6 @@ diel_fs_pd_mod_1 <- rma.mv(yi = yi, V = vi,mods = ~ pd,#+I(pd^2),
                                 data = diel.fs.pd)
 summary(diel_fs_pd_mod_1)
 
-
-
 diel_fs_pd_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~ pd+I(pd^2), 
                                 random = list( ~ 1 | study_ID, 
                                                ~ 1 | effect_ID, 
@@ -270,8 +231,8 @@ diel_fs_pd_mod_2 <- rma.mv(yi = yi, V = vi,mods = ~ pd+I(pd^2),
                                 data = diel.fs.pd)
 summary(diel_fs_pd_mod_2)
 
-AIC(diel_open_fs_pd_mod_1,
-    diel_open_fs_pd_mod_2)
+AIC(diel_fs_pd_mod_1,
+    diel_fs_pd_mod_2)
 
 pd_bubble <- mod_results(diel_fs_pd_mod_2, mod = "pd", 
                          group = "study_ID",
@@ -287,9 +248,13 @@ pd_bubble_plot_out=pd_bubble_plot+
   theme(aspect.ratio = 1,
         strip.background = element_blank(),
         strip.text = element_text(face="bold",size=10))
+
 pd_bubble_plot_out
 
-diel_fs_pd_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~ (pd + I(pd^2)) * (sDTR  * sDaylength), 
+ggsave(pd_bubble_plot_out,file="pd fruit set.jpg",
+       width=6,height=6,dpi=600)
+
+diel_fs_pd_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~ (pd + I(pd^2)) +sDTR  + sDaylength, 
                                 random = list( ~ 1 | study_ID, 
                                                ~ 1 | effect_ID, 
                                                ~ 1 | phylo), 
@@ -298,9 +263,9 @@ diel_fs_pd_mod_3 <- rma.mv(yi = yi, V = vi,mods = ~ (pd + I(pd^2)) * (sDTR  * sD
 
 summary(diel_fs_pd_mod_3)
 
-AIC(diel_open_fs_pd_mod_1,
-    diel_open_fs_pd_mod_2,
-    diel_open_fs_pd_mod_3)
+AIC(diel_fs_pd_mod_1,
+    diel_fs_pd_mod_2,
+    diel_fs_pd_mod_3)
 
 
 ###############
@@ -344,8 +309,8 @@ AIC(diel_ss_mod_1,
 diel_ss_mod_4 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID,
-                                            #~ 1 | phylo,
-                                            ~ 1 | family),  # non-phylogenetic species effect
+                                            ~ 1 | phylo,
+                                            ~ 1 | accepted_name),  # non-phylogenetic species effect
                              #  R = list(phylo = diel_ss_vcv),
                              data = diel.ss)
 

@@ -3,7 +3,7 @@
 #run set-up and effect size calculation first
 
 #run the following line to find world plant database or WFO.download() to get WFO.data the first
-#WFO.remember(WFO.file = NULL, WFO.data = "WFO.data", WFO.pos = 1)
+#WorldFlora::WFO.remember(WFO.file = NULL, WFO.data = "WFO.data", WFO.pos = 1)
 
 diel.phy.df=diel.out
 

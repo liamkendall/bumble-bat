@@ -2,7 +2,7 @@
 #Calculate species pollination dependency
 ######
 
-diel.pd=diel.env.final %>%  
+diel.pd=diel.env.final[-c(690,696,702,708),]  %>%  
   group_by(study_ID, 
            Site_period, 
            year_start,
@@ -51,7 +51,7 @@ pd.values=diel.pd.out %>%
   rename("seed_set_pd"=`seed set`,
          "fruit_set_pd"=`fruit set`)
 
-cor.test(pd.values$seed_set_pd,pd.values$fruit_set_pd)
+plot(pd.values$seed_set_pd,pd.values$fruit_set_pd)
 
 pd.coverage=diel.open.es.out %>% 
   ungroup() %>% 

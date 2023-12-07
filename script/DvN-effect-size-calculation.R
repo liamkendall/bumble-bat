@@ -2,7 +2,7 @@
 ###Effect size calculations###
 ##############################
 
-diel.es=diel.env.final %>%  
+diel.es=diel.env.final[-c(690,696,702,708),] %>%  
   group_by(study_ID, 
            Site_period, 
            year_start,

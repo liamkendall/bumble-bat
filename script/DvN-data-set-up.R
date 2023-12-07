@@ -12,14 +12,14 @@ library(rtrees)
 
 #meta-analysis
 library(metafor)
-
+library(orchaRd)
 #plotting
 library(ggplot2)
 
 source('script/DvN-functions.R')
 
 #raw dataframe
-diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-11-13.csv",sep=",",dec=".",
+diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-12-06.csv",sep=";",dec=".",
                   row.names = 1,
                   encoding = "UTF-8")
 
@@ -151,9 +151,6 @@ ggplot(data=diel.out,
   xlab("Mean")+
   facet_wrap(~treatment_effectiveness_metric,scales="free")
 
-#Imputed values make sense (but definitely some different scales going on)
-#source('script/DvN-phylogeny-set-up.R')
-
 #Widen dataframe
 diel.final=diel.out %>%   
   select(study_ID, 
@@ -171,7 +168,12 @@ diel.final=diel.out %>%
          treatment_condition,
          sample_size,
          effectiveness_value,
-         SDc) %>% 
+         SDc) 
+
+#Imputed values make sense (but definitely some different scales going on)
+source('script/DvN-phylogeny-set-up.R')
+
+diel.final=diel.final%>% 
   left_join(plant.taxonomy.df,by=c("plant_species" = "old_name")) %>% 
   mutate(phylo=gsub(" ","_",accepted_name)) %>% 
   relocate(accepted_name:phylo,.after=plant_species) #%>% glimpse

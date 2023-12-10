@@ -49,6 +49,12 @@ forest(diel.fs$yi,diel.fs$vi)
 #funnel plot
 funnel(diel.fs$yi,diel.fs$vi)
 
+###phylo
+diel.fs.species=unique(diel.fs$phylo)
+setdiff(diel.fs.species,es.list$phylo$tip.label)
+diel.fs.tree=drop.tip(es.list$phylo, setdiff(es.list$phylo$tip.label,
+                                             diel.fs.species))
+
 diel.ss=day.night.df %>% 
   filter(treatment_effectiveness_metric%in%"seed set")%>% 
   filter(!effect_ID%in%175)%>% 
@@ -81,19 +87,16 @@ funnel(diel.ss$yi,diel.ss$vi)
 ########
 
 ###set up phylo
-diel.fs.species=unique(diel.fs$phylo)
-setdiff(diel.fs.species,es.list$phylo$tip.label)
-diel.fs.tree=drop.tip(es.list$phylo, setdiff(es.list$phylo$tip.label,
-                                            diel.fs.species))
+
 diel_fs_vcv <- vcv(diel.fs.tree, cor = T)
 
 ###
-diel_fs_mod_1 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
+diel_fs_mod_1 <- rma.mv(yi = yi, V = vi, 
                              random = list( ~ 1 | study_ID), 
                              data = diel.fs)
 summary(diel_fs_mod_1)
 
-diel_fs_mod_2 <- rma.mv(yi = yi, V = vi, #mods = ~ treatment_condition,
+diel_fs_mod_2 <- rma.mv(yi = yi, V = vi, 
                              random = list( ~ 1 | study_ID, 
                                             ~ 1 | effect_ID), 
                              data = diel.fs)
@@ -145,7 +148,7 @@ ggplot(diel.fs,aes(x=sDaylength,y=yi))+
  # geom_smooth(formula="y~x",method="lm")
 
 diel_fs_sEnv_mod_1 <- rma.mv(yi = yi, V = vi,mods = ~ #treatment_condition *
-                                    sDTR*
+                                    sDTR+
                                     sDaylength,
                                   random = list( ~ 1 | study_ID, 
                                                  ~ 1 | effect_ID, 
@@ -199,6 +202,7 @@ summary(diel_fs_sEnv_mod_4)
 
 ####try with pollination dependency
 source('script/DvN-pollination-dependency.R')
+
 diel.fs.pd = diel.fs %>% 
   left_join(diel.pd.out) %>% 
   filter(!is.na(pd))

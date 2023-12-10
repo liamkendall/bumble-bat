@@ -2,7 +2,7 @@
 #Calculate species pollination dependency
 ######
 
-diel.pd=diel.env.final[-c(690,696,702,708),]  %>%  
+diel.pd=diel.env.final %>%  
   group_by(study_ID, 
            Site_period, 
            year_start,
@@ -36,6 +36,58 @@ diel.pd.es=escalc(data=diel.pd,
                     append=F)
 
 colnames(diel.pd.es)=c("Yi.pd","VI.pd")
+
+
+diel.pd.out.study.level=cbind(diel.pd,diel.pd.es) %>% 
+  filter(!is.na(Yi.pd)) %>% #ungroup() %>% 
+    #select(2:4) %>% 
+  select(study_ID, 
+         Site_period, 
+         year_start,
+         month_start,
+         coordinates_lat,
+         coordinates_lon,
+         plant_species,
+         accepted_name,
+         plant_cultivar, 
+         additional_treatment,treatment_effectiveness_metric,Yi.pd) %>% 
+  group_by(study_ID, 
+           Site_period, 
+           year_start,
+           month_start,
+           coordinates_lat,
+           coordinates_lon,
+           plant_species,
+           accepted_name,
+           plant_cultivar, 
+           additional_treatment) %>% 
+    pivot_wider(names_from = "treatment_effectiveness_metric",
+                values_from = "Yi.pd")%>%#glimpse() 
+    rename("seed_set_pd"=`seed set`,
+           "fruit_set_pd"=`fruit set`)
+
+pd.ss.fs=ggplot(diel.pd.out.study.level %>% 
+                  filter(!is.na(fruit_set_pd))%>% 
+                  filter(!is.na(seed_set_pd)),aes(x=fruit_set_pd,y=seed_set_pd,fill=accepted_name))+
+    geom_point(shape=21,size=4,col="black")+#,fill="#CABEE9")+
+    geom_abline(intercept = 0,slope=1,linetype="solid")+
+  geom_hline(yintercept = 0,linetype="dotdash")+
+  geom_vline(xintercept = 0,linetype="dotdash")+
+  scale_fill_discrete(name="Plant species")+
+  ylab("Seed set dependency")+
+  xlab("Fruit set dependency")+
+  theme_bw()+
+  theme(aspect.ratio = 1)
+
+pd.ss.fs
+
+ggsave(pd.ss.fs,file="dependency correlation.jpg",
+         width=7,
+         height = 5,
+         device="jpg",
+         dpi=600)
+
+range(diel.pd.out.study.level$pd.n)
 
 
 diel.pd.out=cbind(diel.pd,diel.pd.es) %>% 

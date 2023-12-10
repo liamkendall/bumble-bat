@@ -1,7 +1,7 @@
 ##trait matrix
 
 #read trait file from data folder
-traits=read.csv("data/SppTraitMatrix.csv",row.names=1)
+traits=read.csv("data/SppTraitMatrix.csv",row.names=1,stringsAsFactors = T)
 rownames(traits)=ifelse(rownames(traits)%in%"Ipomoea aff. Marcellia","Ipomoea aff-marcellia",
        rownames(traits))
 
@@ -30,50 +30,21 @@ install.packages("gawdis")
 library(gawdis)
 
 #calculate gawdis for trait matrix
-trait.distGow <- gowdis(traits)
+#trait.distGow <- gowdis(traits)
 trait.distGaw <- gawdis(traits)
-                        w.type = "optimized", opti.maxiter = 300)
 
-pcoa(trait.distGaw) %>% biplot()
+#pcoa(trait.distGaw) %>% biplot()
 
 #Consider removing traits: lifespan breeding_system nectar odour color
 table(traits$flower_symmetry)
 table(traits$lifespan)
+table(traits$life_form)
+table(traits$flower_shape)
 table(traits$breeding_system)
+table(traits$bloom_period_simple)
 table(traits$nectar)
 table(traits$odour)
 table(traits$color)
-
-####new trait df without flower_symmetry and nectar
-traits2=traits %>% 
-  select(-c("flower_symmetry",
-         "lifespan",
-         "breeding_system",
-         "nectar",
-         "odour"),
-         "color")#,-nectar)
-
-#gawdis said
-trait.distGaw2 <- gawdis(traits2)
-
-pcoa(trait.distGaw2) %>% biplot()
-
-#i kinda prefer with all
-
-#plot trait matrix
-library(tibble)
-trait.distGaw %>% 
-  as.matrix() %>% 
-  as.data.frame() %>% 
-  rownames_to_column() %>% 
-  pivot_longer(-rowname) %>% 
-  ggplot(aes(x=rowname,y=name,fill=value))+
-  geom_tile()+
-  scale_fill_viridis_c()+
-  theme_bw()+
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))+
-  labs(x="Species",y="Species",fill="Gowdis distance")+
-  theme(legend.position = "bottom")
 
 #cluster distance matrix, plot the clusters and then cut into groups
 library(ape)

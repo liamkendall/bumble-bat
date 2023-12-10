@@ -1,4 +1,4 @@
-####Wrangel data to wide format
+####Wrangle data to wide format
 library(plyr)
 library(dplyr)
 library(tidyr)
@@ -35,9 +35,9 @@ diel=diel.raw %>%
          sample_size:effect_error_units) %>% 
   filter(!sample_size<=1) %>% 
   filter(!is.na(sample_size)==T) %>% 
-  filter(!is.na(effectiveness_value)==T) %>% 
-  filter(treatment_effectiveness_metric%in%c("fruit set",
-                                             "seed set"))
+  filter(!is.na(effectiveness_value)==T) #%>% 
+  #filter(treatment_effectiveness_metric%in%c("fruit set",
+  #                                           "seed set"))
 
 ####chcek stuff
 table(diel$treatment_condition)
@@ -102,6 +102,8 @@ diel.sd=diel %>%
 
 ###missingness summary
 #18 missing from seed set dataframe
+#6 missing from pollen deposition
+#5 missing from seed mass
 diel.sd %>% group_by(impute.type,treatment_effectiveness_metric) %>% 
   summarise(sum_na = sum(is.na(SDc)))
 
@@ -112,33 +114,62 @@ diel.sd %>% group_by(impute.type,treatment_effectiveness_metric) %>%
 #relationship between mean, SD and n in the available data 
 #(91 data rows imputed; adjusted-R2 of these models were between 0.29 and 0.46).
 
-missing.seed=diel.sd %>% 
-  filter(is.na(SDc))
-no.missing.seed=diel.sd %>% 
+no.missing.all=diel.sd %>% 
   filter(!is.na(SDc))
 
-sd.lm=lm(SDc~effectiveness_value*sample_size*treatment_condition,
-         data=no.missing.seed)#
+missing.seed.set=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"seed set") %>% 
+  filter(is.na(SDc))
 
-summary(sd.lm)
+no.missing.seed.set=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"seed set") %>% 
+  filter(!is.na(SDc))
 
-#With treatment condition: Adjusted R-squared:  0.7275
+missing.seed.mass=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"seed mass") %>% 
+  filter(is.na(SDc))
 
-###simpler model
 
-#sd.lm2=lm(SDc~effectiveness_value*sample_size,
-#         data=no.missing.seed)#
-#
-#summary(sd.lm2)
+no.missing.seed.mass=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"seed mass") %>% 
+  filter(!is.na(SDc))
 
-#Without treatment condition: Adjusted R-squared:  0.6353
+missing.pollen.dep=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"pollen deposition") %>% 
+  filter(is.na(SDc))
+
+
+no.missing.pollen.dep=diel.sd%>% 
+  filter(treatment_effectiveness_metric%in%"pollen deposition") %>% 
+  filter(!is.na(SDc))
+
+
+###fit models
+seed.set.sd.lm=lm(SDc~effectiveness_value*sample_size*treatment_condition,
+         data=no.missing.seed.set)#
+
+summary(seed.set.sd.lm) #0.71
+
+seed.mass.sd.lm=lm(SDc~effectiveness_value+sample_size+treatment_condition,
+                  data=no.missing.seed.mass)#
+
+summary(seed.mass.sd.lm) #0.79
+
+pollen.dep.sd.lm=lm(SDc~effectiveness_value+sample_size+treatment_condition,
+                   data=no.missing.pollen.dep)#
+
+summary(pollen.dep.sd.lm) #0.81
 
 #impute missing SDs
-missing.seed$SDc=predict(sd.lm,missing.seed)
+missing.seed.set$SDc=predict(seed.set.sd.lm,missing.seed.set)
+missing.seed.mass$SDc=predict(seed.mass.sd.lm,missing.seed.mass)
+missing.pollen.dep$SDc=predict(pollen.dep.sd.lm,missing.pollen.dep)
 
 ##combine dataframe
-diel.out=rbind.fill(missing.seed,
-                    no.missing.seed) 
+diel.out=rbind.fill(no.missing.all,
+                    missing.seed.set,
+                    missing.seed.mass,
+                    missing.pollen.dep) 
 
 #check imputation types visually
 ggplot(data=diel.out,
@@ -150,6 +181,12 @@ ggplot(data=diel.out,
   ylab("SD")+
   xlab("Mean")+
   facet_wrap(~treatment_effectiveness_metric,scales="free")
+
+diel.out %>% filter(treatment_effectiveness_metric%in%"fruit mass" & SDc >200)
+
+diel.out %>% filter(treatment_effectiveness_metric%in%"fruit set" & SDc >15)
+
+diel.out %>% filter(treatment_effectiveness_metric%in%"seed mass" & SDc >5)
 
 #Widen dataframe
 diel.final=diel.out %>%   
@@ -181,11 +218,11 @@ diel.final.out=diel.final%>%
 ###manual fix of ipomoea aff.
 sum(is.na(diel.final.out$accepted_name)) #7
 
-diel.final.out$accepted_name=ifelse(diel.final.out$plant_species%in%"Ipomoea aff. Marcellia",
-                                "Ipomoea aff-marcellia",diel.final.out$accepted_name)
-
-diel.final.out$phylo=ifelse(diel.final.out$plant_species%in%"Ipomoea aff. Marcellia",
-                                "Ipomoea_aff-marcellia",diel.final.out$phylo)
+#select plant_species and accepted_name and filter only NAs in accepted name
+diel.final.out %>% 
+  select(plant_species,accepted_name) %>% 
+  filter(is.na(accepted_name)) %>% 
+  distinct(plant_species)
 
 #####add environmental co-variates
 list.files("data/")
@@ -208,11 +245,34 @@ diel.env.final=diel.final.out %>%
   relocate(midDate:Daylength,.after=coordinates_lon)
 
 ###add traits dataframe to diel.env.final
-source("script/DvN-trait-set-up.R")
+#source("script/DvN-trait-set-up.R")
+
+traits=read.csv("data/SppTraitMatrix.csv",row.names=1,stringsAsFactors = T)
+rownames(traits)=ifelse(rownames(traits)%in%"Ipomoea aff. Marcellia","Ipomoea aff-marcellia",
+                        rownames(traits))
+
+rownames(traits)=ifelse(rownames(traits)%in%"Silene latifolia  subsp. alba",
+                        "Silene latifolia-alba",
+                        rownames(traits))
+
+rownames(traits)=ifelse(rownames(traits)%in%"Castilleja purpurea  var. citrina",
+                        "Castilleja purpurea-citrina",
+                        rownames(traits))
+
+rownames(traits)=ifelse(rownames(traits)%in%"Castilleja purpurea  var. lindheimeri",
+                        "Castilleja purpurea-lindheimeri",
+                        rownames(traits))
+
+#check difference between traits rownames and plant species from diel
+setdiff(rownames(traits),
+        unique(diel.env.final$accepted_name))
+
+setdiff(unique(diel.env.final$accepted_name),
+        rownames(traits))
+#BRA!
 
 diel.env.final.out=diel.env.final %>% 
   left_join(traits %>% 
               mutate(accepted_name=rownames(traits)),
-            by=c("accepted_name")) #%>% 
-  #relocate(plant_height:pollinator_dependence,.after=Daylength)
+            by=c("accepted_name")) 
 

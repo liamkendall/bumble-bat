@@ -43,11 +43,25 @@ plant.taxonomy.df=plants.wfo.one%>%
          family=family)# %>% 
  # mutate(accepted_name=word(accepted_name,1,2,sep=" "))
 
-###manual fix for aff. marcellia
-#plant.taxonomy.df$accepted_name=ifelse(duplicated(plant.taxonomy.df$accepted_name),
-#       "Ipomoea aff. marcellia",
-#       plant.taxonomy.df$accepted_name)
+#setdiff plant.taxaonomy and diel plant species
+setdiff(plant.taxonomy.df$old_name,diel.final$plant_species)
+#opposite
+setdiff(diel.final$plant_species,plant.taxonomy.df$old_name)
 
+#change names
+plant.taxonomy.df$old_name=ifelse(plant.taxonomy.df$old_name%in%"Ipomoea Marcellia",
+                                  "Ipomoea aff. Marcellia",
+                                  plant.taxonomy.df$old_name)
+
+plant.taxonomy.df$old_name=ifelse(plant.taxonomy.df$old_name%in%"Fragaria ×ananassa",
+                                      "Fragaria x ananassa",
+                                  plant.taxonomy.df$old_name)
+
+plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$accepted_name%in%"Fragaria × ananassa",
+                                           "Fragaria ananassa",
+                                       plant.taxonomy.df$accepted_name)
+
+######
 plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$old_name%in%"Silene alba",
                                        "Silene latifolia  subsp. alba",
                                        plant.taxonomy.df$accepted_name)
@@ -60,7 +74,7 @@ plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$old_name%in%"Castilleja
        "Castilleja purpurea  var. lindheimeri",
        plant.taxonomy.df$accepted_name)
 
-plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$old_name%in%"Ipomoea Marcellia",
+plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$old_name%in%"Ipomoea aff. Marcellia",
                                        "Ipomoea aff. marcellia",
                                        plant.taxonomy.df$accepted_name)
 
@@ -112,4 +126,6 @@ plant.taxonomy.df.out$accepted_name=ifelse(plant.taxonomy.df.out$accepted_name%i
 plant.taxonomy.df.out$accepted_name=ifelse(plant.taxonomy.df.out$accepted_name%in% "Ipomoea aff. marcellia",
                          "Ipomoea aff-marcellia",
                          plant.taxonomy.df.out$accepted_name)
+
+
 

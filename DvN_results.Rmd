@@ -70,6 +70,7 @@ diel.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
 diel_vcv <- vcv(diel.tree, cor = T)
 
 ##run model
+<<<<<<< HEAD
 #pollEff.mod <- rma.mv(yi = yi, 
 #                      V = vi,
 #                      mods = ~ treatment_effectiveness_metric * treatment,
@@ -94,6 +95,21 @@ load(file="models/pollEffmod.rData")
 #                        ~1|accepted_name),
 #                      R = list(phylo = diel_vcv),
 #                      data = diel.all.diffs)
+=======
+pollEff.mod <- rma.mv(yi = yi, 
+                      V = vi,
+                      mods = ~ treatment_effectiveness_metric * treatment,
+                      random = list(
+                        ~1|study_ID,
+                        ~1|effect_ID,
+                        ~1|phylo,
+                        ~1|accepted_name),
+                      R = list(phylo = diel_vcv),
+                      data = diel.all.diffs)
+>>>>>>> 256635f4924b712dfd363e3f3fe89844232bb8db
+
+save(pollEff.mod,file="models/pollEffmod.rData")
+load(file="models/pollEffmod.rData")
 
 ##generate pairwise comparisons between treatment_effectiveness_metric and treatment using emmeans
 all.es <- qdrg(object = pollEff.mod, data = diel.all.diffs)#, at = list(vi = 0, year.c = 0))
@@ -137,6 +153,7 @@ FS.treat.mod <- rma.mv(yi,vi,mods = ~ treatment,
                          ~1|accepted_name),
                        R = list(phylo = diel.fs.vcv),
                        data = fs.es)
+<<<<<<< HEAD
 
 #knitr::kable(summary(FS.treat.mod))
 
@@ -146,6 +163,17 @@ fs.trt.model <- mod_results(FS.treat.mod,
 
 fs_trt_orchard=orchard_plot(fs.trt.model, xlab = "Standardised Mean Difference")
 
+=======
+
+#knitr::kable(summary(FS.treat.mod))
+
+fs.trt.model <- mod_results(FS.treat.mod, 
+                            group = "study_ID", 
+                            mod = "treatment")
+
+fs_trt_orchard=orchard_plot(fs.trt.model, xlab = "Standardised Mean Difference")
+
+>>>>>>> 256635f4924b712dfd363e3f3fe89844232bb8db
 fs_trt_orchard
 
 #### SEED SET ####

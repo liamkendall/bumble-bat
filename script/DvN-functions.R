@@ -354,8 +354,8 @@ all_spp_23 <- function(PC, x="PC2", y="PC3") {
   #Add axis with perctentage
   percentage <- round(diag(PC$Eval) / sum(PC$Eval) * 100, 2) #calculate percentage
   
-  plot <- plot + xlab(paste("PC2 ", "(",(percentage[1]),"%",")", sep = "")) #XLAB
-  plot <- plot + ylab(paste("PC3 ", "(",(percentage[2]),"%",")", sep = "")) #YLAB
+  plot <- plot + xlab(paste("PC2 ", "(",(percentage[2]),"%",")", sep = "")) #XLAB
+  plot <- plot + ylab(paste("PC3 ", "(",(percentage[3]),"%",")", sep = "")) #YLAB
   
   
   #CHANGE THEME
@@ -437,7 +437,7 @@ all_spp_13 <- function(PC, x="PC1", y="PC3") {
   percentage <- round(diag(PC$Eval) / sum(PC$Eval) * 100, 2) #calculate percentage
   
   plot <- plot + xlab(paste("PC1 ", "(",(percentage[1]),"%",")", sep = "")) #XLAB
-  plot <- plot + ylab(paste("PC3 ", "(",(percentage[2]),"%",")", sep = "")) #YLAB
+  plot <- plot + ylab(paste("PC3 ", "(",(percentage[3]),"%",")", sep = "")) #YLAB
   
   
   #CHANGE THEME

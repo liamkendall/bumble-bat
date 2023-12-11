@@ -105,12 +105,12 @@ bag.night.es=escalc(data=diel.es,
 ###bag vs. open
 bag.open.es=escalc(data=diel.es,
                     measure="SMD",
-                    #open pollination (control)
+                    #bag (control)
                     m2i=`effectiveness_value_complete exclusion`, 
                     sd2i = `SDc_complete exclusion`,
                     n2i=`sample_size_complete exclusion`, 
                     
-                    #day pollination (treatment)
+                    #open pollination (treatment)
                     m1i=`effectiveness_value_open pollination`, 
                     sd1i = `SDc_open pollination`,
                     n1i=`sample_size_open pollination`,
@@ -118,13 +118,30 @@ bag.open.es=escalc(data=diel.es,
   filter(!is.na(yi)) %>% 
   mutate(treatment="bag_open")
 
+###cross vs. open
+hand.open.es=escalc(data=diel.es,
+                   measure="SMD",
+                   #open pollination (control)
+                   m2i=`effectiveness_value_open pollination`, 
+                   sd2i = `SDc_open pollination`,
+                   n2i=`sample_size_open pollination`, 
+                   
+                   #hand pollination (treatment)
+                   m1i=`effectiveness_value_hand pollination`, 
+                   sd1i = `SDc_hand pollination`,
+                   n1i=`sample_size_hand pollination`,
+                   append=T) %>% 
+  filter(!is.na(yi)) %>% 
+  mutate(treatment="open_hand")
+
 ###cbind the g's
 diel.es.out=rbind(day.night.es,
                   open.night.es,
                   open.day.es,
                   bag.night.es,
                   bag.day.es,
-                  bag.open.es)%>% 
+                  bag.open.es,
+                  hand.open.es)%>% 
   mutate(effect_ID=1:n()) %>% 
   relocate(effect_ID,.after = study_ID)
 

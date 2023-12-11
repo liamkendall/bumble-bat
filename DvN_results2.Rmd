@@ -1,0 +1,820 @@
+---
+title: "DvN_Results"
+author: "Bumblebat"
+date: "12/11/2023"
+output:
+  pdf_document: default
+  html_document: default
+  fig_crop: no
+---
+
+```{r setup, include=FALSE, fig.width = 18, fig.height=5}
+```
+
+``` {r setup 2, echo=FALSE, warning=FALSE, message=FALSE}
+
+####
+source('script/DvN-functions.R')
+#### Dependencies #####
+require(kableExtra)
+library(broom)
+####Wrangle data to wide format
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(httr)
+library(stringr)
+
+#phylo/taxonomy packages
+library(WorldFlora)
+library(phytools)
+library(rtrees)
+
+#meta-analysis
+library(metafor)
+library(orchaRd)
+library(emmeans)
+
+#plotting
+library(ggplot2)
+
+#### DATA INPUTS ####
+
+load("data/effect_size_dataframes.rData")
+
+phylo.tree <- es.list$phylo
+traits.out<- es.list$traits
+#effs.df <- XXX
+
+
+#### PREPARE DATA ####
+#site level dependency
+diel.dependency=es.list$dvn_effects %>% 
+  #filter yi between -10 and 10
+  filter(treatment == "bag_open")
+
+#species level dependency
+diel.spp.dependency=es.list$dvn_effects %>% 
+  #filter yi between -10 and 10
+  filter(treatment == "bag_open") %>% 
+  group_by(accepted_name,treatment_effectiveness_metric) %>%
+  summarise(spp.poll.dep=mean(yi),
+            spp.poll.dep.var=mean(vi),
+            n=n())
+
+diel.spp.limitation=es.list$dvn_effects %>% 
+  #filter yi between -10 and 10
+  filter(treatment == "open_hand") %>% 
+  group_by(accepted_name,treatment_effectiveness_metric) %>%
+  summarise(spp.poll.lim=mean(yi),
+            spp.poll.lim.var=mean(vi),
+            n=n())
+
+
+diel.all.diffs=es.list$dvn_effects %>% 
+  #filter yi between -10 and 10
+  filter(yi > -10 & yi < 10) %>% 
+  mutate(sDaylength=as.numeric(scale(Daylength)),
+         sDTR=as.numeric(scale(DTR))) %>%  
+  #  left_join(diel.dependency %>%  #select(study_ID,country:additional_treatment,treatment_effectiveness_metric,
+  #                                       yi,vi) %>% 
+  #              rename(poll.dep=yi,
+  #                     poll.dep.var=vi), 
+  #            by = c("study_ID","country",
+  #                   "Site_period","year_start","month_start","month_end",
+  #                   "coordinates_lat","coordinates_lon","midDate",
+  #                   "JDay_midDate","Lat_int","Daylength",
+  #                   "plant_species","accepted_name","family","phylo","plant_cultivar",
+  #                   "additional_treatment","treatment_effectiveness_metric"),
+  #            relationship = "many-to-many")%>%  
+left_join(diel.spp.dependency,
+          by = c("accepted_name", "treatment_effectiveness_metric")) %>%  
+  left_join(diel.spp.limitation,
+            by = c("accepted_name", "treatment_effectiveness_metric"))%>% 
+  filter(treatment%in%c("day_night","open_day","open_night"))
+
+
+```  
+
+####Throughout (+ive) or (-ive) in brackets indicates that that treatment performs better if values are (+ive) or (-ive)
+
+### Effect size (ES) between pollination effectiveness measures  
+
+```{r EFFECTIVENESS COMPARISONS, message = FALSE, echo=FALSE}
+
+##phylo vcv
+diel.species=unique(diel.all.diffs$phylo)
+#setdiff(diel.fs.species,es.list$phylo$tip.label)
+diel.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                       diel.species))
+diel_vcv <- vcv(diel.tree, cor = T)
+
+##run model
+
+#pollEff.mod <- rma.mv(yi = yi, 
+#                      V = vi,
+#                      mods = ~ treatment_effectiveness_metric * treatment,
+#                      random = list(
+#                        ~1|study_ID,
+#                        ~1|effect_ID,
+#                        ~1|phylo,
+#                        ~1|accepted_name),
+#                      R = list(phylo = diel_vcv),
+#                      data = diel.all.diffs)
+#
+#save(pollEff.mod,file="models/pollEffmod.rData")
+load(file="models/pollEffmod.rData")
+
+##generate pairwise comparisons between treatment_effectiveness_metric and treatment using emmeans
+#all.es <- qdrg(object = pollEff.mod, data = diel.all.diffs)#, at = list(vi = 0, year.c = 0))
+
+#pollEff.emm <- emmeans(all.es, ~ treatment_effectiveness_metric + treatment, 
+#                       adjust = "tukey", 
+#                       type = "response")
+
+trt_model <- mod_results(pollEff.mod, 
+                         group = "study_ID", 
+                         mod = "treatment_effectiveness_metric",
+                         by = "treatment")
+
+trt_orchard=orchard_plot(trt_model, xlab = "Standardised Mean Difference",
+                         legend.pos ="bottom.out")#+theme(aspect.ratio = 1)
+
+pollEff.mod
+
+trt_orchard
+
+```  
+
+### Summary of pollination dependency (bag (-ive) vs. open (+ive)) and limitation (open (-ive) vs. hand (+ive)) 
+
+```{r DEP LIM summary, message = FALSE, echo=FALSE}
+diel.d.l=es.list$dvn_effects %>% 
+  filter(treatment%in%c("bag_open","open_hand")) %>% 
+  filter(treatment_effectiveness_metric%in%c("fruit set","seed set"))
+
+diel.d.l.species=unique(diel.d.l$phylo)
+diel.d.l.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                          diel.d.l.species))
+
+diel.d.l.vcv <- vcv(diel.d.l.tree, cor = T)
+
+### All
+DEP.lim.mod <- rma.mv(yi,vi,mods = ~ treatment*treatment_effectiveness_metric,
+                       random = list(
+                         ~1|study_ID,
+                         ~1|effect_ID,
+                         ~1|phylo,
+                         ~1|accepted_name),
+                       R = list(phylo = diel.d.l.vcv),
+                       data = diel.d.l)
+
+dep.lim.model <- mod_results(DEP.lim.mod, 
+                            group = "study_ID", by="treatment_effectiveness_metric",
+                            mod = "treatment")
+
+dep_lim_orchard=orchard_plot(dep.lim.model, xlab = "Standardised Mean Difference")
+
+dep_lim_orchard
+
+```
+
+### The influence of pollination dependency on day (-ive) vs. night (+ive) pollination for fruit and seed set
+
+##Fruit set = significant quadratic relationship
+
+##Seed set = insignificant
+
+```{r POLL DEP, message = FALSE, echo=FALSE}
+
+#### FRUIT SET ####
+#print("Fruit set and species-level pollination dependency. Order is DvN, OvD, OvN")
+cat("**Fruit set and species-level pollination dependency. Order is DvN, OvD, OvN**")
+
+### fruit set
+## DvN
+fs.dn.pd.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set" &
+           treatment == "day_night" &
+           !is.na(spp.poll.dep))
+
+fs.dn.pd.species=unique(fs.dn.pd.es$phylo)
+fs.dn.pd.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                           fs.dn.pd.species))
+
+fs.dn.pd.vcv <- vcv(fs.dn.pd.tree, cor = T)
+
+FS.DvN.PD.mod <- rma.mv(yi,vi,mods = ~ spp.poll.dep + I(spp.poll.dep^2),
+                        random = list(
+                          ~1|study_ID,
+                          ~1|effect_ID,
+                          ~1|phylo,
+                          ~1|accepted_name),
+                        R = list(phylo = fs.dn.pd.vcv),
+                        data = fs.dn.pd.es)
+
+FS.DvN.PD.mod
+#knitr::kable(summary(FS.DvN.PD.mod))
+
+fs.dn.pd.bubble <- mod_results(FS.DvN.PD.mod, mod = "spp.poll.dep", 
+                               group = "study_ID",
+                               weights = "prop")
+fs.dn.pd.bubble.plot=bubble_plot(fs.dn.pd.bubble, group = "study_ID", 
+                                 mod = "spp.poll.dep", xlab = "Pollination dependency", 
+                                 legend.pos = "top.left")+ggtitle("Fruit set (day vs. night)")
+fs.dn.pd.bubble.plot
+
+#### SEED SET ####
+
+### seed set
+## DvN
+ss.dn.pd.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set" &
+           treatment == "day_night" &
+           !is.na(spp.poll.dep))
+
+ss.dn.pd.species=unique(ss.dn.pd.es$phylo)
+ss.dn.pd.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                           ss.dn.pd.species))
+
+ss.dn.pd.vcv <- vcv(ss.dn.pd.tree, cor = T)
+
+SS.DvN.PD.mod <- rma.mv(yi,vi,mods = ~ spp.poll.dep,# + I(spp.poll.dep^2),
+                        random = list(
+                          ~1|study_ID,
+                          ~1|effect_ID,
+                          ~1|phylo,
+                          ~1|accepted_name),
+                        R = list(phylo = ss.dn.pd.vcv),
+                        data = ss.dn.pd.es)
+
+SS.DvN.PD.mod
+#knitr::kable(summary(SS.DvN.PD.mod))
+
+
+```
+
+### The influence of pollen limitation (open (-ive) vs. hand (+ive)) on day (-ive) vs. night (+ive) pollination for fruit and seed set
+
+##Fruit set = insignificant
+
+##Seed set = significant quadratic relationship
+
+```{r POLL LIM, message = FALSE, echo=FALSE}
+
+### fruit set by limitation
+## DvN
+fs.dn.pl.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set" &
+           treatment == "day_night" &
+           !is.na(spp.poll.lim))
+
+fs.dn.pl.species=unique(fs.dn.pl.es$phylo)
+fs.dn.pl.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                           fs.dn.pl.species))
+
+fs.dn.pl.vcv <- vcv(fs.dn.pl.tree, cor = T)
+
+FS.DvN.PL.mod <- rma.mv(yi,vi,mods = ~ spp.poll.lim + I(spp.poll.lim^2),
+                        random = list(
+                          ~1|study_ID,
+                          ~1|effect_ID,
+                          ~1|phylo,
+                          ~1|accepted_name),
+                        R = list(phylo = fs.dn.pl.vcv),
+                        data = fs.dn.pl.es)
+
+FS.DvN.PL.mod
+#knitr::kable(summary(FS.DvN.PD.mod))
+
+### seed set by limitation
+ss.dn.pl.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set" &
+           treatment == "day_night" &
+           !is.na(spp.poll.lim))
+
+ss.dn.pl.species=unique(ss.dn.pl.es$phylo)
+ss.dn.pl.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                           ss.dn.pl.species))
+
+ss.dn.pl.vcv <- vcv(ss.dn.pl.tree, cor = T)
+
+SS.DvN.PL.mod <- rma.mv(yi,vi,mods = ~ spp.poll.lim + I(spp.poll.lim^2),
+                        random = list(
+                          ~1|study_ID,
+                          ~1|effect_ID,
+                          ~1|phylo,
+                          ~1|accepted_name),
+                        R = list(phylo = ss.dn.pl.vcv),
+                        data = ss.dn.pl.es)
+
+SS.DvN.PL.mod
+
+ss.dn.pl.bubble <- mod_results(SS.DvN.PL.mod, mod = "spp.poll.lim", 
+                               group = "study_ID",
+                               weights = "prop")
+ss.dn.pl.bubble.plot=bubble_plot(ss.dn.pl.bubble, group = "study_ID", 
+                                 mod = "spp.poll.lim", xlab = "Pollination limitation", 
+                                 legend.pos = "top.left")+ggtitle("Seed set (day vs. night)")
+ss.dn.pl.bubble.plot
+
+```  
+
+### The influence of plant trait dimensions: Flower dimensions (PC1, negative correlation), Plant size and to a lesser extent, style length (PC2, negative correlation), and plant size (PC3, positive correlation) & environment
+
+##Flower dimensions seem to be more important in improving day pollination relative to open conditions than night pollination. Could this be associated with visual cues?
+
+```{r PCA summary, message = FALSE, echo=FALSE}
+
+###load PCA and plot it
+load("data/dvn_phyl_pca.rdata")
+PC <- dvn_phyl_pca
+
+percentage <- round(diag(PC$Eval) / sum(PC$Eval) * 100, 2) #calculate percentage
+
+percentage
+
+#first three
+sum(percentage[1] + percentage[2] + percentage[3]) 
+
+PC
+
+percentage[1] 
+percentage[2]
+
+```
+
+```{r PCA plot 1, message = FALSE, echo=FALSE}
+all_spp_12(PC)
+```
+
+```{r PCA plot 2, message = FALSE, echo=FALSE}
+all_spp_13(PC)
+```
+
+```{r PCA plot 3, message = FALSE, echo=FALSE}
+all_spp_23(PC)
+```
+
+###Fruit set and traits and environment
+
+##Very weak effects of DTR
+##Some interactions open_day and PC1
+
+#weak interaction between Daylength and open_day (will be borderline if slope is sig diff from 0)
+
+```{r traits env fruit set, message = FALSE, echo=FALSE}
+#### FRUIT SET ####
+
+## DvN
+fs.pc.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set")
+
+fs.pc.species=unique(fs.pc.es$phylo)
+fs.pc.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        fs.pc.species))
+
+fs.pc.vcv <- vcv(fs.pc.tree, cor = T)
+
+FS.PC1.mod <- rma.mv(yi,vi,mods = ~ treatment+PC1+#I(PC1^2)+
+                       PC2+#I(PC2^2)+
+                       PC3+
+                       treatment:PC1+#I(PC1^2)+
+                       treatment:PC2+#I(PC2^2)+
+                       treatment:PC3,#+I(PC3^2),
+                     random = list(
+                       ~1|study_ID,
+                       ~1|effect_ID,
+                       ~1|phylo,
+                       ~1|accepted_name),
+                     R = list(phylo = fs.pc.vcv),
+                     data = fs.pc.es)
+
+FS.PC1.mod
+#knitr::kable(summary(FS.DvN.PC1.mod))
+
+fs.pc.bubble <- mod_results(FS.PC1.mod, mod = "PC1", 
+                            group = "study_ID",by="treatment",
+                            weights = "prop")
+
+fs.pc.bubble.plot=bubble_plot(fs.pc.bubble, 
+                              group = "study_ID",# at = "open_day",
+                              mod = "PC1", xlab = "PC1", by="treatment",
+                              legend.pos = "top.left")+
+  ggtitle("Fruit set")
+
+fs.pc.bubble.plot
+
+#FS.PC1.mod2 <- rma.mv(yi,vi,mods = ~ treatment+PC1+#I(PC1^2)+
+#                        PC2+#I(PC2^2)+
+#                        PC3+
+#                        treatment:PC1+#I(PC1^2)+
+#                        treatment:PC2+#I(PC2^2)+
+#                        treatment:PC3+
+#                        sDTR+
+#                        sDTR:treatment+
+#                        sDTR:PC1+#I(PC1^2)+
+#                        sDTR:PC2+#I(PC2^2)+
+#                        sDTR:PC3,#+I(PC3^2),
+#                      random = list(
+#                        ~1|study_ID,
+#                        ~1|effect_ID,
+#                        ~1|phylo,
+#                        ~1|accepted_name),
+#                      R = list(phylo = fs.pc.vcv),
+#                      data = fs.pc.es)
+
+#AIC(FS.PC1.mod,
+#    FS.PC1.mod2)
+
+#FS.PC1.mod2
+
+FS.PC1.mod3 <- rma.mv(yi,vi,mods = ~ treatment+PC1+#I(PC1^2)+
+                        PC2+#I(PC2^2)+
+                        PC3+
+                        treatment:PC1+#I(PC1^2)+
+                        treatment:PC2+#I(PC2^2)+
+                        treatment:PC3+
+                        sDaylength+
+                        sDaylength:treatment+
+                        sDaylength:PC1+#I(PC1^2)+
+                        sDaylength:PC2+#I(PC2^2)+
+                        sDaylength:PC3,#+I(PC3^2),
+                      random = list(
+                        ~1|study_ID,
+                        ~1|effect_ID,
+                        ~1|phylo,
+                        ~1|accepted_name),
+                      R = list(phylo = fs.pc.vcv),
+                      data = fs.pc.es)
+
+#AIC(FS.PC1.mod3,
+#    FS.PC1.mod2)
+
+fs.pc.bubble.4 <- mod_results(FS.PC1.mod3, mod = "sDaylength", 
+                              group = "study_ID",by="treatment",
+                              #at=list(treatment="open_day"),
+                              weights = "prop")
+
+fs.pc.bubble.4.plot=bubble_plot(fs.pc.bubble.4, group = NULL, 
+                                mod = "sDaylength", xlab = "Daylength",
+                                by="treatment",
+                                legend.pos = "top.left")+
+  ggtitle("Fruit set")
+
+fs.pc.bubble.4.plot
+```
+
+
+###Seed set and traits and environment
+
+##strong effect of PC2 - negative for day vs night (+ive) and night (-ive) vs. open (+ive) , and then positive for day (-ive) vs. open (+ive)
+##strong effect of PC3 on open_day
+
+#weak interaction between Daylength and open_day (will be borderline if slope is sig diff from 0)
+
+```{r traits env seed set, message = FALSE, echo=FALSE}
+#### SEED SET ####
+
+### seed set
+## DvN
+ss.pc.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set")
+
+ss.pc.species=unique(ss.pc.es$phylo)
+ss.pc.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        ss.pc.species))
+
+ss.pc.vcv <- vcv(ss.pc.tree, cor = T)
+
+SS.PC1.mod <- rma.mv(yi,vi,mods = ~ treatment+PC1+
+                       PC2+
+                       PC3+
+                       treatment:PC1+
+                       treatment:PC2+
+                       treatment:PC3,
+                     random = list(
+                       ~1|study_ID,
+                       ~1|effect_ID,
+                       ~1|phylo,
+                       ~1|accepted_name),
+                     R = list(phylo = ss.pc.vcv),
+                     data = ss.pc.es)
+
+SS.PC1.mod
+
+ss.pc.bubble <- mod_results(SS.PC1.mod, mod = "PC2", 
+                            group = "study_ID",by="treatment",
+                            weights = "prop")
+
+ss.pc.bubble.plot=bubble_plot(ss.pc.bubble, group = "study_ID", 
+                              mod = "PC2", xlab = "PC2", by="treatment",
+                              legend.pos = "top.left")+
+  ggtitle("Seed set")
+
+ss.pc.bubble.plot
+
+ss.pc.bubble.2 <- mod_results(SS.PC1.mod, mod = "PC3", 
+                              group = "study_ID",by="treatment",
+                              weights = "prop")
+
+ss.pc.bubble.2.plot=bubble_plot(ss.pc.bubble.2, group = "study_ID", 
+                                mod = "PC2", xlab = "PC3", by="treatment",
+                                legend.pos = "top.left")+
+  ggtitle("Seed set")
+
+ss.pc.bubble.2.plot
+
+###trait and the environment
+
+SS.PC1.mod2 <- rma.mv(yi,vi,mods = ~ treatment+PC1+#I(PC1^2)+
+                        PC2+
+                        PC3+
+                        treatment:PC1+
+                        treatment:PC2+
+                        treatment:PC3+
+                        sDTR+
+                        sDTR:treatment+
+                        sDTR:PC1+
+                        sDTR:PC2+
+                        sDTR:PC3,
+                      random = list(
+                        ~1|study_ID,
+                        ~1|effect_ID,
+                        ~1|phylo,
+                        ~1|accepted_name),
+                      R = list(phylo = ss.pc.vcv),
+                      data = ss.pc.es)
+
+SS.PC1.mod2
+
+#AIC(SS.PC1.mod,
+#    SS.PC1.mod2)
+
+SS.PC1.mod3 <- rma.mv(yi,vi,mods = ~ treatment+PC1+#I(PC1^2)+
+                        PC2+
+                        PC3+
+                        treatment:PC1+
+                        treatment:PC2+
+                        treatment:PC3+
+                        sDaylength+
+                        sDaylength:treatment+
+                        sDaylength:PC1+
+                        sDaylength:PC2+
+                        sDaylength:PC3,
+                      random = list(
+                        ~1|study_ID,
+                        ~1|effect_ID,
+                        ~1|phylo,
+                        ~1|accepted_name),
+                      R = list(phylo = ss.pc.vcv),
+                      data = ss.pc.es)
+
+#AIC(SS.PC1.mod3,
+#    SS.PC1.mod2)
+SS.PC1.mod3
+
+ss.pc.bubble.4 <- mod_results(SS.PC1.mod3, mod = "sDaylength", 
+                              group = "study_ID",by="treatment",
+                              weights = "prop")
+
+ss.pc.bubble.4.plot=bubble_plot(ss.pc.bubble.3, group = "study_ID", 
+                                mod = "sDaylength", xlab = "Daylength", 
+                                by="treatment",
+                                legend.pos = "top.left")
+ggtitle("Seed set")
+
+ss.pc.bubble.4.plot
+
+```  
+
+```{r CLIMATE, message = FALSE, echo=FALSE,include=F}
+
+#### FRUIT SET ####
+
+#print("Fruit set and the environment. Order is DvN, OvD, OvN")
+cat("**Fruit set and the environment. Order is DvN, OvD, OvN**")
+
+### fruit set
+fs.dn.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set" &
+           treatment == "day_night")
+
+fs.dn.species=unique(fs.dn.es$phylo)
+fs.dn.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        fs.dn.species))
+fs.dn.vcv <- vcv(fs.dn.tree, cor = T)
+
+## DvN
+FS.DvN.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = fs.dn.vcv),
+                         data = fs.dn.es)
+
+FS.DvN.Env.mod
+##knitr::kable(summary(FS.DvN.Env.mod))
+
+
+### fruit set
+## DvO
+fs.od.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set" &
+           treatment == "open_day")
+
+fs.od.species=unique(fs.od.es$phylo)
+fs.od.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        fs.od.species))
+fs.od.vcv <- vcv(fs.od.tree, cor = T)
+
+FS.DvO.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = fs.od.vcv),
+                         data = fs.od.es)
+FS.DvO.Env.mod
+
+##knitr::kable(summary(FS.DvO.Env.mod))
+
+#orchard_plot(FS.DvO.Env.mod)
+
+### fruit set
+## NvO
+fs.on.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "fruit set" &
+           treatment == "open_night")
+
+fs.on.species=unique(fs.on.es$phylo)
+fs.on.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        fs.on.species))
+fs.on.vcv <- vcv(fs.on.tree, cor = T)
+
+FS.NvO.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = fs.on.vcv),
+                         data = fs.on.es)
+
+FS.NvO.Env.mod
+
+#### SEED SET ####
+
+#print("Seed set and the environment. Order is DvN, OvD, OvN")
+cat("**Seed set and the environment. Order is DvN, OvD, OvN**")
+
+
+### seed set
+## DvN
+ss.dn.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set" &
+           treatment == "day_night")
+
+ss.dn.species=unique(ss.dn.es$phylo)
+ss.dn.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        ss.dn.species))
+ss.dn.vcv <- vcv(ss.dn.tree, cor = T)
+SS.DvN.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = ss.dn.vcv),
+                         data = ss.dn.es)
+SS.DvN.Env.mod
+##knitr::kable(summary(SS.DvN.Env.mod))
+
+
+
+### seed set
+## DvO
+ss.od.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set" &
+           treatment == "open_day")
+
+ss.od.species=unique(ss.od.es$phylo)
+ss.od.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        ss.od.species))
+
+ss.od.vcv <- vcv(ss.od.tree, cor = T)
+
+SS.DvO.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = ss.od.vcv),
+                         data = ss.od.es)
+
+SS.DvO.Env.mod
+#knitr::kable(summary(SS.DvO.Env.mod))
+
+
+
+### Seed set
+## NvO
+ss.on.es=diel.all.diffs %>% 
+  filter(treatment_effectiveness_metric == "seed set" &
+           treatment == "open_night")
+
+ss.on.species=unique(ss.on.es$phylo)
+ss.on.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        ss.on.species))
+
+ss.on.vcv <- vcv(ss.on.tree, cor = T)
+
+SS.NvO.Env.mod <- rma.mv(yi,vi,mods = ~ sDTR+sDaylength,
+                         random = list(
+                           ~1|study_ID,
+                           ~1|effect_ID,
+                           ~1|phylo,
+                           ~1|accepted_name),
+                         R = list(phylo = ss.on.vcv),
+                         data = ss.on.es)
+
+#knitr::kable(summary(SS.NvO.Env.mod))
+SS.NvO.Env.mod
+
+
+```  
+
+```{r Categorical traits, message = FALSE, echo=FALSE,include=F}
+
+comps.df=data.frame(comparison=rep(c("day_night","open_day","open_night"),3),
+                    metric=rep(c("fruit set","seed set"),each=5)[-1],
+                    trait=colnames(traits.out[,1:9])) %>% 
+  complete(comparison,metric,trait)
+
+i=comps.df$metric[1]
+j=comps.df$comparison[1]
+k=comps.df$trait[1]
+
+cat.trait.mod.list=list()
+for(h in 1:nrow(comps.df)){
+  
+  i=comps.df$metric[h]
+  j=comps.df$comparison[h]
+  k=comps.df$trait[h]
+  
+  out.df=diel.all.diffs %>% 
+    filter(treatment %in% j) %>% 
+    filter(treatment_effectiveness_metric %in% i) %>% 
+    filter(!is.na(yi))
+  
+  diel.all.diffs[,k]=as.factor(diel.all.diffs[,k])
+  
+  out.species=unique(out.df$phylo)
+  out.tree=drop.tip(phylo.tree, setdiff(phylo.tree$tip.label,
+                                        out.species))
+  out.vcv <- vcv(out.tree, cor = T)
+  
+  out=rma.mv(yi,vi,mods = as.formula(paste("~",k)),
+             random = list(
+               ~1|study_ID,
+               ~1|effect_ID,
+               ~1|phylo,
+               ~1|accepted_name),
+             R = list(phylo =out.vcv),
+             data = out.df)
+  
+  cat.trait.mod.list[[paste(i,j,k)]]=out
+}
+
+#make an orchard plot for each model in cat.trait.mod.list using a for loop
+cat.orchard.list=list()
+for(h in 1:length(cat.trait.mod.list)){
+  names(cat.trait.mod.list)[h]
+  i=word(names(cat.trait.mod.list)[h],1,2)
+  j=word(names(cat.trait.mod.list)[h],3)
+  k=word(names(cat.trait.mod.list)[h],4)
+  
+  trt_out <- mod_results(cat.trait.mod.list[[h]], 
+                         group = "study_ID", 
+                         mod = k)
+  
+  out_orchard=orchard_plot(trt_out, xlab = "Standardised Mean Difference",
+                           legend.pos ="bottom.out")+
+    ggtitle(paste(i,gsub("_"," ",j)))+
+    xlab(str_to_title(gsub("_"," ",k)))
+  
+  
+  cat.orchard.list[[h]]=out_orchard
+  
+}
+
+for (i in 1:length(cat.orchard.list)){
+  print(cat.trait.mod.list[[i]])
+  print(cat.orchard.list[[i]])
+}
+
+```  

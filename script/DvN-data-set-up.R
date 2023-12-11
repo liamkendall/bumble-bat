@@ -270,9 +270,49 @@ setdiff(rownames(traits),
 setdiff(unique(diel.env.final$accepted_name),
         rownames(traits))
 #BRA!
+rownames(traits)=gsub(" ","_",rownames(traits))
+#################################################################################################################################
+#4) CALCULATE PPCA
+########################################################################################################################################################
+
+dn.pca.tree=dn.tree
+dn.pca.tree=drop.tip(dn.tree, setdiff(
+  dn.tree$tip.label,rownames(traits)))
+
+traits.pca=traits %>% select_if(is.numeric) %>% 
+  mutate_if(is.numeric,scale)
+
+rownames(traits.pca)=gsub(" ","_",rownames(traits.pca))
+
+setdiff(
+  rownames(traits.pca),dn.pca.tree$tip.label)
+#opposite
+setdiff(
+  dn.pca.tree$tip.label,rownames(traits.pca))
+
+dvn_phyl_pca <- phyl.pca(dn.tree, traits.pca,
+                         method="lambda",mode="cov")
+
+##save pca as rdata in data folder
+save(dvn_phyl_pca,file="data/dvn_phyl_pca.rdata")
+
+#CALL the output PC for simplicity
+PC <- dvn_phyl_pca
+#CHECK CONTENT
+#EIGENVALUES
+PC$Eval
+#PC score (POINTS)
+PC$S
+
+traits.out=traits
+
+traits.out$PC1 <- PC$S[,1]
+traits.out$PC2 <- PC$S[,2]
+traits.out$PC3 <- PC$S[,3]
+traits.out$PC4 <- PC$S[,4]
 
 diel.env.final.out=diel.env.final %>% 
-  left_join(traits %>% 
-              mutate(accepted_name=rownames(traits)),
+  left_join(traits.out %>% 
+              mutate(accepted_name=gsub("_"," ",rownames(traits))),
             by=c("accepted_name")) 
 

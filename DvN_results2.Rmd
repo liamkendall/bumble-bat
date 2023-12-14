@@ -337,7 +337,7 @@ percentage
 #first three
 sum(percentage[1] + percentage[2] + percentage[3]) 
 
-PC
+suppressWarnings(PC)
 
 percentage[1] 
 percentage[2]
@@ -345,15 +345,15 @@ percentage[2]
 ```
 
 ```{r PCA plot 1, message = FALSE, echo=FALSE}
-all_spp_12(PC)
+suppressWarnings(all_spp_12(PC))
 ```
 
 ```{r PCA plot 2, message = FALSE, echo=FALSE}
-all_spp_13(PC)
+suppressWarnings(all_spp_13(PC))
 ```
 
 ```{r PCA plot 3, message = FALSE, echo=FALSE}
-all_spp_23(PC)
+suppressWarnings(all_spp_23(PC))
 ```
 
 ###Fruit set and traits and environment
@@ -578,7 +578,7 @@ ss.pc.bubble.4 <- mod_results(SS.PC1.mod3, mod = "sDaylength",
                               group = "study_ID",by="treatment",
                               weights = "prop")
 
-ss.pc.bubble.4.plot=bubble_plot(ss.pc.bubble.3, group = "study_ID", 
+ss.pc.bubble.4.plot=bubble_plot(ss.pc.bubble.4, group = "study_ID", 
                                 mod = "sDaylength", xlab = "Daylength", 
                                 by="treatment",
                                 legend.pos = "top.left")

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.29)  11 DEC 2023 21:54
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.4.29)  12 DEC 2023 08:50
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -858,125 +858,144 @@ Overfull \hbox (39.90283pt too wide) in paragraph at lines 366--367
 
 [7 <./DvN_results2_files/figure-latex/POLL LIM-1.pdf>]
 
-LaTeX Warning: File `DvN_results2_files/figure-latex/PCA summary-1.pdf' not fou
-nd on input line 438.
+LaTeX Warning: File `DvN_results2_files/figure-latex/PCA plot 1-1.pdf' not foun
+d on input line 421.
 
-<DvN_results2_files/figure-latex/PCA summary-1.pdf, id=106, 471.7625pt x 326.21
-875pt>
-File: DvN_results2_files/figure-latex/PCA summary-1.pdf Graphic file (type pdf)
+<DvN_results2_files/figure-latex/PCA plot 1-1.pdf, id=106, 321.2pt x 316.18124p
+t>
+File: DvN_results2_files/figure-latex/PCA plot 1-1.pdf Graphic file (type pdf)
+<use DvN_results2_files/figure-latex/PCA plot 1-1.pdf>
+Package pdftex.def Info: DvN_results2_files/figure-latex/PCA plot 1-1.pdf  used
+ on input line 421.
+(pdftex.def)             Requested size: 321.20901pt x 316.19011pt.
 
-<use DvN_results2_files/figure-latex/PCA summary-1.pdf>
-Package pdftex.def Info: DvN_results2_files/figure-latex/PCA summary-1.pdf  use
-d on input line 438.
-(pdftex.def)             Requested size: 469.76015pt x 324.83414pt.
+LaTeX Warning: File `DvN_results2_files/figure-latex/PCA plot 2-1.pdf' not foun
+d on input line 423.
 
-Overfull \hbox (66.83054pt too wide) in paragraph at lines 438--439
-[]\T1/lmr/m/n/10 (-20) summary-1.pdf [] 
- []
+<DvN_results2_files/figure-latex/PCA plot 2-1.pdf, id=107, 321.2pt x 316.18124p
+t>
+File: DvN_results2_files/figure-latex/PCA plot 2-1.pdf Graphic file (type pdf)
+<use DvN_results2_files/figure-latex/PCA plot 2-1.pdf>
+Package pdftex.def Info: DvN_results2_files/figure-latex/PCA plot 2-1.pdf  used
+ on input line 423.
+(pdftex.def)             Requested size: 321.20901pt x 316.19011pt.
+[8 <./DvN_results2_files/figure-latex/PCA plot 1-1.pdf>]
 
-[8] [9 <./DvN_results2_files/figure-latex/PCA summary-1.pdf>]
+LaTeX Warning: File `DvN_results2_files/figure-latex/PCA plot 3-1.pdf' not foun
+d on input line 425.
+
+<DvN_results2_files/figure-latex/PCA plot 3-1.pdf, id=130, 321.2pt x 316.18124p
+t>
+File: DvN_results2_files/figure-latex/PCA plot 3-1.pdf Graphic file (type pdf)
+<use DvN_results2_files/figure-latex/PCA plot 3-1.pdf>
+Package pdftex.def Info: DvN_results2_files/figure-latex/PCA plot 3-1.pdf  used
+ on input line 425.
+(pdftex.def)             Requested size: 321.20901pt x 316.19011pt.
+[9 <./DvN_results2_files/figure-latex/PCA plot 2-1.pdf> <./DvN_results2_files/f
+igure-latex/PCA plot 3-1.pdf>]
 
 LaTeX Warning: File `DvN_results2_files/figure-latex/traits env fruit set-1.pdf
-' not found on input line 498.
+' not found on input line 485.
 
-<DvN_results2_files/figure-latex/traits env fruit set-1.pdf, id=134, 463.7325pt
+<DvN_results2_files/figure-latex/traits env fruit set-1.pdf, id=172, 463.7325pt
  x 313.17pt>
 File: DvN_results2_files/figure-latex/traits env fruit set-1.pdf Graphic file (
 type pdf)
 <use DvN_results2_files/figure-latex/traits env fruit set-1.pdf>
 Package pdftex.def Info: DvN_results2_files/figure-latex/traits env fruit set-1
-.pdf  used on input line 498.
+.pdf  used on input line 485.
 (pdftex.def)             Requested size: 463.73842pt x 313.174pt.
 
-Overfull \hbox (71.23746pt too wide) in paragraph at lines 498--499
+Overfull \hbox (71.23746pt too wide) in paragraph at lines 485--486
 []\T1/lmr/m/n/10 (-20) env fruit set-1.pdf [] 
  []
 
+[10]
 
 LaTeX Warning: File `DvN_results2_files/figure-latex/traits env fruit set-2.pdf
-' not found on input line 504.
+' not found on input line 491.
 
-<DvN_results2_files/figure-latex/traits env fruit set-2.pdf, id=135, 463.7325pt
+<DvN_results2_files/figure-latex/traits env fruit set-2.pdf, id=177, 463.7325pt
  x 315.1775pt>
 File: DvN_results2_files/figure-latex/traits env fruit set-2.pdf Graphic file (
 type pdf)
 <use DvN_results2_files/figure-latex/traits env fruit set-2.pdf>
 Package pdftex.def Info: DvN_results2_files/figure-latex/traits env fruit set-2
-.pdf  used on input line 504.
+.pdf  used on input line 491.
 (pdftex.def)             Requested size: 463.73842pt x 315.18153pt.
 
-Overfull \hbox (71.23746pt too wide) in paragraph at lines 504--505
+Overfull \hbox (71.23746pt too wide) in paragraph at lines 491--492
 []\T1/lmr/m/n/10 (-20) env fruit set-2.pdf [] 
  []
 
-[10 <./DvN_results2_files/figure-latex/traits env fruit set-1.pdf>] [11 <./DvN_
+[11 <./DvN_results2_files/figure-latex/traits env fruit set-1.pdf>] [12 <./DvN_
 results2_files/figure-latex/traits env fruit set-2.pdf>]
 
 LaTeX Warning: File `DvN_results2_files/figure-latex/traits env seed set-1.pdf'
- not found on input line 566.
+ not found on input line 553.
 
-<DvN_results2_files/figure-latex/traits env seed set-1.pdf, id=171, 463.7325pt 
+<DvN_results2_files/figure-latex/traits env seed set-1.pdf, id=212, 463.7325pt 
 x 313.17pt>
 File: DvN_results2_files/figure-latex/traits env seed set-1.pdf Graphic file (t
 ype pdf)
 <use DvN_results2_files/figure-latex/traits env seed set-1.pdf>
 Package pdftex.def Info: DvN_results2_files/figure-latex/traits env seed set-1.
-pdf  used on input line 566.
+pdf  used on input line 553.
 (pdftex.def)             Requested size: 463.73842pt x 313.174pt.
 
 LaTeX Warning: File `DvN_results2_files/figure-latex/traits env seed set-2.pdf'
- not found on input line 567.
+ not found on input line 554.
 
-<DvN_results2_files/figure-latex/traits env seed set-2.pdf, id=172, 463.7325pt 
+<DvN_results2_files/figure-latex/traits env seed set-2.pdf, id=213, 463.7325pt 
 x 313.17pt>
 File: DvN_results2_files/figure-latex/traits env seed set-2.pdf Graphic file (t
 ype pdf)
 <use DvN_results2_files/figure-latex/traits env seed set-2.pdf>
 Package pdftex.def Info: DvN_results2_files/figure-latex/traits env seed set-2.
-pdf  used on input line 567.
+pdf  used on input line 554.
 (pdftex.def)             Requested size: 463.73842pt x 313.174pt.
 
-Overfull \hbox (70.44815pt too wide) in paragraph at lines 566--568
+Overfull \hbox (70.44815pt too wide) in paragraph at lines 553--555
 []\T1/lmr/m/n/10 (-20) env seed set-1.pdf []
  []
 
 
-Overfull \hbox (70.44815pt too wide) in paragraph at lines 566--568
+Overfull \hbox (70.44815pt too wide) in paragraph at lines 553--555
 \T1/lmr/m/n/10 (-20) env seed set-2.pdf [] 
  []
 
-[12 <./DvN_results2_files/figure-latex/traits env seed set-1.pdf>] [13 <./DvN_r
-esults2_files/figure-latex/traits env seed set-2.pdf>]
+[13 <./DvN_results2_files/figure-latex/traits env seed set-1.pdf>] [14 <./DvN_r
+esults2_files/figure-latex/traits env seed set-2.pdf>] [15]
 
 LaTeX Warning: File `DvN_results2_files/figure-latex/traits env seed set-3.pdf'
- not found on input line 648.
+ not found on input line 698.
 
-<DvN_results2_files/figure-latex/traits env seed set-3.pdf, id=208, 463.7325pt 
+<DvN_results2_files/figure-latex/traits env seed set-3.pdf, id=253, 463.7325pt 
 x 315.1775pt>
 File: DvN_results2_files/figure-latex/traits env seed set-3.pdf Graphic file (t
 ype pdf)
 <use DvN_results2_files/figure-latex/traits env seed set-3.pdf>
 Package pdftex.def Info: DvN_results2_files/figure-latex/traits env seed set-3.
-pdf  used on input line 648.
+pdf  used on input line 698.
 (pdftex.def)             Requested size: 463.73842pt x 315.18153pt.
 
-Overfull \hbox (70.44815pt too wide) in paragraph at lines 648--649
+Overfull \hbox (70.44815pt too wide) in paragraph at lines 698--699
 []\T1/lmr/m/n/10 (-20) env seed set-3.pdf [] 
  []
 
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 650.
-[14] [15 <./DvN_results2_files/figure-latex/traits env seed set-3.pdf>]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 650.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 700.
+[16] [17 <./DvN_results2_files/figure-latex/traits env seed set-3.pdf>]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 700.
 (./DvN_results2.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 650.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 650.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 650.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 700.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 700.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 700.
  ) 
 Here is how much of TeX's memory you used:
- 14112 strings out of 492649
- 208061 string characters out of 6129622
+ 14122 strings out of 492649
+ 208549 string characters out of 6129622
  334260 words of memory out of 5000000
- 17712 multiletter control sequences out of 15000+600000
+ 17720 multiletter control sequences out of 15000+600000
  30242 words of font info for 48 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  34i,7n,38p,2560b,458s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -987,10 +1006,10 @@ texmf-dist/fonts/type1/public/lm/lmbx10.pfb></usr/local/texlive/2018/texmf-dist
 1/public/lm/lmr12.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/lm
 /lmr17.pfb></usr/local/texlive/2018/texmf-dist/fonts/type1/public/lm/lmtt10.pfb
 >
-Output written on DvN_results2.pdf (15 pages, 521933 bytes).
+Output written on DvN_results2.pdf (17 pages, 534802 bytes).
 PDF statistics:
- 275 PDF objects out of 1000 (max. 8388607)
- 220 compressed objects within 3 object streams
- 26 named destinations out of 1000 (max. 500000)
- 8283 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 320 PDF objects out of 1000 (max. 8388607)
+ 257 compressed objects within 3 object streams
+ 28 named destinations out of 1000 (max. 500000)
+ 8293 words of extra memory for PDF output out of 10000 (max. 10000000)
 

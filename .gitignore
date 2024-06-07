@@ -2,8 +2,14 @@
 .Rhistory
 .RData
 .Ruserdata
-data/DVN_Missing_dependency.csv
-data/DVN_Missing_dependency.xlsx
-data/missing dependency.csv
-script/DvN-trait-evolution.R
 
+data/old_data
+figures/old_figures
+output/old_output
+script/old_script
+
+classification.csv
+
+WFO_Backbone.zip
+
+June7_submission.rData

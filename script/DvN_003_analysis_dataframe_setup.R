@@ -28,7 +28,7 @@ library(ggplot2)
 
 #####data input
 #this dataframe is a product of the set-up scripts
-load("output/DvN_effect_size_dataframe June5.rData")
+load("output/DvN_effect_size_dataframe Sep16.rData")
 
 #### PREPARE DATA ####
 
@@ -36,32 +36,21 @@ load("output/DvN_effect_size_dataframe June5.rData")
 #then calculate species level
 #and genus level
 
+#####
+#REMOVE?
+#####
+
 #dependency dataframe
 diel.dependency=es.list$dvn_effects %>% 
-  filter(treatment == "bag_open") %>% 
-  #filter yi between -10 and 10
-  filter(yi > -10 & yi < 10) #removes one extreme yi
-
-#metric level dependency
-diel.spp.dependency=diel.dependency %>% 
-  group_by(accepted_name,treatment_effectiveness_metric) %>%
-  summarise(spp.poll.dep=mean(yi),
-            spp.poll.dep.var=mean(vi),
-            n=n())
-
-#species level
-diel.spp.nm.dependency=diel.dependency %>% 
-  group_by(accepted_name) %>%
-  summarise(spp.nm.pd=mean(yi),
-            spp.nm.pd.var=mean(vi),
-            n=n())
-
-diel.genus.nm.dependency=diel.dependency %>% 
-  mutate(genus=word(accepted_name,1)) %>% 
-  group_by(genus) %>%
-  summarise(spp.g.pd=mean(yi),
-            spp.g.pd.var=mean(vi),
-            n=n())
+  filter(treatment == "bag_open")%>% 
+#  #rename yi and vi
+  rename(poll.dep=yi,
+         poll.dep.var=vi) %>%
+  select(study_ID,poll.dep,poll.dep.var,
+         effectiveness_value_complete.exclusion,
+         effectiveness_value_open.pollination,
+         effectiveness_value_day.pollination,
+         effectiveness_value_night.pollination)
 
 #####assemble final dataframe
 #remove extreme effect sizes
@@ -70,21 +59,22 @@ diel.genus.nm.dependency=diel.dependency %>%
 #remove one species without photosynthetic pathway
 
 diel.all.diffs=es.list$dvn_effects %>% 
-  filter(treatment%in%c("day_night","open_day","open_night"))%>%
+  filter(treatment%in%c("day_night","open_day","open_night"))%>% 
+  left_join(diel.dependency)%>%
   #filter yi between -10 and 10
   filter(yi > -10 & yi < 10) %>% #removes five extreme yis
   mutate(genus=word(accepted_name,1)) %>% 
   mutate(sDaylength=as.numeric(scale(Daylength)),
          sDTR=as.numeric(scale(DTR)),
          sElevation=as.numeric(scale(elevation))) %>%  
-  left_join(diel.spp.dependency,
-            by = c("accepted_name", "treatment_effectiveness_metric")) %>%  
-  left_join(diel.spp.nm.dependency,
-            by = c("accepted_name"))%>%  
-  left_join(diel.genus.nm.dependency,
-            by = c("genus"))%>%  
-  mutate(pd.imp=ifelse(is.na(spp.poll.dep),spp.nm.pd,spp.poll.dep)) %>% 
-  mutate(pd.imp.all=ifelse(is.na(pd.imp),spp.g.pd,pd.imp)) %>% 
+  mutate(hr.ratio=day_pollination_hrs/night_pollination_hrs) %>%
+  mutate(hr.ratio.missing=ifelse(is.na(hr.ratio),"Absent","Present")) %>%
+  mutate(hr.ratio.out=ifelse(is.na(hr.ratio),Daylength/(24-Daylength),hr.ratio)) %>%
+  mutate(day_pollination_hrs2=ifelse(is.na(day_pollination_hrs),Daylength,day_pollination_hrs)) %>%
+  mutate(night_pollination_hrs2=ifelse(is.na(night_pollination_hrs),24-Daylength,night_pollination_hrs)) %>%
+  mutate(exposure=ifelse(treatment%in%"open_day",day_pollination_hrs2/24,hr.ratio.out)) %>% 
+  mutate(exposure=ifelse(treatment%in%"open_night",night_pollination_hrs2/24,exposure)) %>% 
+
   ungroup() %>% 
   mutate(sFlower_length=as.numeric(scale((flower_length_midpoint_mm))),
          sStyle_length=as.numeric(scale((style_length_midpoint_mm))),
@@ -119,8 +109,16 @@ tree <- phylo.maker(sp.list = diel.phylo, tree = GBOTB.extended.TPL, nodes = nod
 #take scenario 3 tree
 diel.tree.out=tree$scenario.3
 
+###pollination dependency dataframe
+poll.dep.es=es.list$dvn_effects %>% filter(treatment%in%"bag_open") %>% 
+  filter(accepted_name%in%diel.all.diffs$accepted_name)%>%
+  #filter yi between -10 and 10
+  filter(yi > -10 & yi < 10)
+
 ###save dataframe and phylogeny
-save(diel.all.diffs,file="output/DvN_analysis_dataframe June5.RData")
-save(diel.tree.out,file="output/DvN_plant_phylogeny June5.RData")
+save(diel.all.diffs,file="output/DvN_analysis_dataframe Sep16.RData")
+save(poll.dep.es,file="output/DvN_polldep_analysis_dataframe Sep16.RData")
+
+save(diel.tree.out,file="output/DvN_plant_phylogeny Sep16.RData")
 
 

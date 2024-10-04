@@ -8,9 +8,9 @@
 library(countrycode)
 
 ###load from DvN_003_Analysis_dataframe_setup.R
-load(file="output/DvN_analysis_dataframe June5.RData")
+load(file="output/DvN_analysis_dataframe Sep16.RData")
 diel.all.diffs
-load(file="output/DvN_plant_phylogeny June5.RData")
+load(file="output/DvN_plant_phylogeny Sep16.RData")
 diel.tree.out
 
 
@@ -104,13 +104,12 @@ crop.spp.tots=diel.all.diffs %>%
   summarise(n=n())
 
 ####pollination dependency summaries
-poll.dep.summaries=diel.all.diffs %>% filter(treatment%in%"day_night")
+poll.dep.summaries=es.list$dvn_effects %>% filter(treatment%in%"bag_open") %>% 
+  filter(accepted_name%in%diel.all.diffs$accepted_name)
 
-#study-level
-(length(poll.dep.summaries$spp.poll.dep)-sum(is.na(poll.dep.summaries$spp.poll.dep)))/length(poll.dep.summaries$spp.poll.dep)
-#species-level
-(length(poll.dep.summaries$pd.imp)-sum(is.na(poll.dep.summaries$pd.imp)))/length(poll.dep.summaries$pd.imp)
-#genus-level
-(length(poll.dep.summaries$pd.imp.all)-sum(is.na(poll.dep.summaries$pd.imp.all)))/length(poll.dep.summaries$pd.imp.all)
-
-
+#species
+unique(poll.dep.es$accepted_name) %>% length
+#studies
+unique(poll.dep.es$study_ID) %>% length
+#effect sizes
+dim(poll.dep.es)

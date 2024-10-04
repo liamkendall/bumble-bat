@@ -9,7 +9,7 @@
 ##############################
 
 #load dataframe from DvN_001
-load(file="data/DvN_raw_dataframe_pre_effect_size_calculation.RData")
+load(file="output/DvN_raw_dataframe_pre_effect_size_calculation Sep16.RData")
 diel.env.final.out
 
 diel.es=diel.env.final.out
@@ -95,7 +95,7 @@ bag.open.es=escalc(data=diel.esc.1,
   mutate(treatment="bag_open")
 
 ###cbind the g's
-diel.es.out=rbind(day.night.es,
+diel.es.out=rbind.fill(day.night.es,
                   open.night.es,
                   open.day.es,
                   bag.open.es)%>% 
@@ -109,5 +109,5 @@ es.list=list(diel.es.out,
 
 #name list elements
 names(es.list)=c("dvn_effects","environment","traits")
-save(es.list,file="output/DvN_effect_size_dataframe June5.rData")
+save(es.list,file="output/DvN_effect_size_dataframe Sep16.rData")
 

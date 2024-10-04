@@ -26,10 +26,7 @@ library(ggplot2)
 source('script/DvN_additional_functions.R')
 
 #load raw data
-#diel.raw=read.csv("data/DvN_LiteratureDataClean_2023-12-20.csv",#sep=";",dec=".",
-#                 row.names = 1,
-#                  encoding = "UTF-8")
-diel.raw=read.csv("data/DvN_LiteratureDataClean_2024-06-04.csv",#sep=";",dec=".",
+diel.raw=read.csv("data/DvN_LiteratureDataClean_2024-09-13.csv",#sep=";",dec=".",
                   row.names = 1,
                   encoding = "UTF-8")
 
@@ -45,17 +42,7 @@ diel=diel.raw %>%
          sample_size:effect_error_units) %>% 
   filter(!sample_size<=1) %>% #remove sample sizes of 1
   filter(!is.na(sample_size)==T) %>% #remove NAs
-  filter(!is.na(effectiveness_value)==T) #%>% 
-#  #add missing crop data, first simplify string and set NAs to N (wild)
-#  dplyr::mutate(crop_out=ifelse(is.na(plant_crop),
-#                                "n",plant_crop)) %>%
-#  #manually fix remaining crops 
-#  mutate(crop_out=ifelse(plant_species%in%c("Hylocereus undatus",
-#                                             "Vaccinium angustifolium",
-#                                             "Stenocereus queretaroensis",
-#                                            "Hylocereus costaricensis"),
-#                "y",
-#                crop_out)) 
+  filter(!is.na(effectiveness_value)==T)
 
 table(diel$plant_crop) #1356,229
   
@@ -100,10 +87,6 @@ diel=diel %>% mutate(impute.type=case_when(treatment_effectiveness_metric%in%"fr
                           effect_error_units == "CI95" &
                             sample_size > 60 ~
                             "CI95",
-                          #coder_initials%in%"LKK" &
-                          #  !study_ID%in%"Benning_2015" &
-                          #  is.na(effect_error_L)==F ~
-                          #  "CI95t",
                             is.na(effect_error)==T ~ "CV",
                           effect_error_units=="min-max" ~ "CV",
                             .default = "none")) 
@@ -235,6 +218,8 @@ diel.final=diel.out %>%
          year_start,
          month_start,
          month_end,
+         day_pollination_hrs,
+         night_pollination_hrs,
          coordinates_lat,
          coordinates_lon,
          plant_species,
@@ -350,4 +335,4 @@ sum(is.na(diel.env.final.out$plant_species)) #0
 diel.env.final.out %>% 
   summarise_all(~sum(is.na(.)))
 
-save(diel.env.final.out,file="output/DvN_raw_dataframe_pre_effect_size_calculation June5.RData")
+save(diel.env.final.out,file="output/DvN_raw_dataframe_pre_effect_size_calculation Sep16.RData")

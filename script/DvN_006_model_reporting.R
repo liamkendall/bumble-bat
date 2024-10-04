@@ -24,10 +24,10 @@ plot.theme=theme(
 #####Calculate heterogeneity (I^2) for meta-analytic models of each diel pollination difference
 
 #load models
-load("output/DvN_meta_analytical_models.RData")
-load("output/DvN_meta_regression_categorical_trait_models.RData")
-load("output/DvN_meta_regression_continuous_trait_environment_models.RData")
-load("output/DvN_meta_regression_pollination_dependency_models.RData")
+load("output/DvN_meta_analytical_models Sep16.RData")
+load("output/DvN_meta_regression_categorical_trait_models Sep16.RData")
+load("output/DvN_meta_regression_continuous_trait_environment_models Sep16.RData")
+load("output/DvN_meta_regression_pollination_dependency_models Sep16.RData")
 
 #model list name
 overall.list
@@ -40,6 +40,31 @@ i2_ma.on <- i2_ml(overall.list[[2]])
 #open vs day (supplementary)
 i2_ma.od <- i2_ml(overall.list[[3]])
 
+#####FIGURE SX. Pollination dependency
+poll.dep.mod.table = mod_results(pd.full,group="study_ID")
+
+pd.mod.plot=orchard_sans_pi(poll.dep.mod.table,
+                            group="study_ID",
+                            legend.pos = "none",
+                            k.pos="right",
+                            xlab="SMD")+
+  scale_color_manual(values=c("white","white","white","white","white"))+
+  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
+  plot.theme+
+  theme(aspect.ratio = 0.25,
+        #axis.text.y = element_text(hjust=1),
+        legend.position="none",
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank())+
+  labs(y="Pollination dependency (SMD)")
+
+pd.mod.plot
+
+ggsave(pd.mod.plot,file="figures/Figure A1-4 Oct4.jpg",
+       dpi=600,width=5,height=3,units="in")
+
+
+
 #####Figure 2 (Figures A2.1 & A2.2)
 ###Phylogeny + model-estimates (and phylogenetic signal) of species-level diel pollination differences
 ###
@@ -49,8 +74,9 @@ trts=unique(diel.all.diffs$treatment)
 #
 trt.out=trts[1]
 
-###phylo signal
+###phylo signal and % significant species
 phylo.sig.list=list()
+diff.zero.list=list()
 for (i in 1:length(trts)){
   
   trt.out=trts[i]
@@ -70,7 +96,7 @@ for (i in 1:length(trts)){
   spp_re$phylo<-gsub(" ","_",rownames(spp_re))
   
   #get predictions
-  preds<-predict.rma(overall.list[[trt.out]],addx=TRUE)
+  preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
   
   #combine
   plotdat<-join(phylo_re,spp_re,by="phylo")
@@ -85,11 +111,19 @@ for (i in 1:length(trts)){
   #calculate SE
   plotdat$blup.se<-sqrt((plotdat$fe_se^2)+(plotdat$se^2)+(plotdat$se2^2))
   
+  #calculate CI
+  plotdat$ci.lb<-plotdat$blup-1.96*plotdat$blup.se
+  plotdat$ci.ub<-plotdat$blup+1.96*plotdat$blup.se
+  
+  #overlap zero
+  plotdat$diff.zero=ifelse(plotdat$ci.lb>0 | plotdat$ci.ub<0,0,1)
+  
   dn.phy.out=data.frame(row.names = plotdat$phylo,mean=plotdat$blup)
   
   svl <- as.matrix(dn.phy.out)[,1]
   
   phylo.sig.list[[trt.out]]=phylosig(dn.phy.out.tree,svl,"lambda",test=T)
+  diff.zero.list[[trt.out]]=plotdat
 }
 
 #tabulate lambda
@@ -122,7 +156,7 @@ for (i in 1:length(trts)){
   plotdat<-join(phylo_re,spp_re,by="phylo")
   
   #get predictions
-  preds<-predict.rma(overall.list[[trt.out]],addx=TRUE)
+  preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
   
   plotdat$pred<-preds$pred
   plotdat$ci.ub<-preds$ci.ub
@@ -130,13 +164,16 @@ for (i in 1:length(trts)){
   plotdat$fe_se<-preds$se
   
   plotdat$blup<-plotdat$pred+plotdat$intrcpt+plotdat$intrcpt2
-  plotdat$blup.se<-sqrt((plotdat$fe_se^2)+(plotdat$se^2)+(plotdat$se2^2))
+  plotdat$blup.se<-sqrt((plotdat$fe_se^2)+
+                          (plotdat$se^2)+(plotdat$se2^2))
   
+  plotdat$ci.lb<-plotdat$blup-1.96*plotdat$blup.se
+  plotdat$ci.ub<-plotdat$blup+1.96*plotdat$blup.se
+  plotdat$diff.zero=ifelse(plotdat$ci.lb>0 | plotdat$ci.ub<0,0,1)
   
   dn.phy.out=data.frame(row.names = plotdat$phylo,mean=plotdat$blup)
   
   svl <- as.matrix(dn.phy.out)[,1]
-  
   
   lambda.out=lambda.df %>% filter(treatment%in%trt.out)
   
@@ -215,18 +252,21 @@ for (i in 1:length(trts)){
   dot.plot.c=plotdat %>%  
     left_join(crop.ids) %>% 
     mutate(accepted_name=ifelse(accepted_name %in% "Ipomoea aff-marcellia",
-                                  "Ipomoea aff. marcellia",accepted_name)) %>% 
+                                "Ipomoea aff. marcellia",accepted_name)) %>% 
     mutate(label=factor(accepted_name,
                         levels=rev(get_taxa_name(p1)))) %>% 
-    ggplot(aes(y=label,x=blup,fill=crop))+
+    ggplot(aes(y=label,x=blup,fill=crop,alpha=as.factor(diff.zero)))+
     annotate("rect",xmin=preds$ci.lb,
              xmax=preds$ci.ub,
              ymin=0,ymax=Inf,alpha=0.5,
              fill="lightgrey")+
     geom_vline(xintercept = preds$pred,linetype="dashed")+
-    #  geom_vline(xintercept = 0,linetype="solid",col="white")+
-    geom_errorbarh(aes(xmin=blup-blup.se,xmax=blup+blup.se),height=0.5,linewidth=0.35)+
-    geom_point(pch=21,col="black",show.legend = F)+
+    geom_vline(xintercept = 0,linetype="solid",col="grey",size=0.5)+
+    geom_errorbarh(aes(xmin=blup-(blup.se*1.96),
+                       xmax=blup+(blup.se*1.96)),
+                   height=0.5,linewidth=0.35,show.legend = F)+
+    scale_alpha_manual(values=c(1,0.5))+
+    geom_point(pch=21,col="black",show.legend = F,alpha=1)+
     theme_bw()+
     scale_fill_manual(values=c("white","darkgrey"))+
     theme(aspect.ratio = 3.25,
@@ -243,58 +283,51 @@ for (i in 1:length(trts)){
   if(trt.out=="day_night"){
     phylo.gg.list[[trt.out]]=cbind(ggplotGrob(p1),ggplotGrob(dot.plot.c+ 
                                                                draw_image("images/day.png",
-                                                                          y = 135.5,x=-3.175,scale=4)+
+                                                                          y = 135.5,x=-3.5,scale=4)+
                                                                draw_image("images/night.png",
-                                                                          y = 135.5,x=1.85,scale=4)))
+                                                                          y = 135.5,x=2.5,scale=4)))
   }else{
-  
-  phylo.gg.list[[trt.out]]=cbind(ggplotGrob(p1),ggplotGrob(dot.plot.c))
-}
+    
+    phylo.gg.list[[trt.out]]=cbind(ggplotGrob(p1),ggplotGrob(dot.plot.c))
+  }
 }
 #save plots
 ggsave(phylo.gg.list[["day_night"]],
-       file="figures/Figure 2 June5.jpg",
+       file="figures/Figure 2 Oct4.jpg",
        dpi=600,height=10,width=8.3,units="in")
 ggsave(phylo.gg.list[["open_day"]],
-       file="figures/Figure A2-1 June5.jpg",
+       file="figures/Figure A2-1 Oct4.jpg",
        dpi=600,height=10,width=8.3,units="in")
 ggsave(phylo.gg.list[["open_night"]],
-       file="figures/Figure A2-2 June5.jpg",
+       file="figures/Figure A2-2 Oct4.jpg",
        dpi=600,height=10,width=8.3,units="in")
 
 
 ######Figure 3 (Figures A2.3 & 2.4)
-#Overall diel pollination differences (top panel) and by effectivness metric
+#by effectiveness metric
 #####
-#Overall models, generate dataframe and orchard plot using orchaRd and simplified function
-#not plotted
-#ove.mod.tables=lapply(overall.list,function (x) mod_results(x,group="study_ID",mod = "1"))
-#
-#ove.mod.plots=lapply(ove.mod.tables,function (x) orchard_sans_pi(x,group="study_ID",
-#                                                                 legend.pos = "none",
-#                                                                 k.pos="right",
-#                                                                 mod = "1",
-#                                                                 xlab="SMD"))
 
 #Effectiveness metric models, generate dataframe and orchard plot using orchaRd and simplified function
-eff.mod.tables=lapply(eff.list,function (x) mod_results(x,group="study_ID",mod = "treatment_effectiveness_metric"))
+eff.mod.tables=lapply(eff.list,function (x) mod_results(x,group="study_ID",mod = "treatment_effectiveness_metric",
+                                                        at = list(exposure = c(1))))
 
-eff.mod.plots=lapply(eff.mod.tables,function (x) orchard_sans_pi(x,group="study_ID",legend.pos = "none",k.pos="right",mod = "treatment_effectiveness_metric",xlab="SMD",
-                                                                 tree.order=(c("Seed set","Seed mass","Pollen deposition","Fruit set","Fruit mass"))))
+eff.mod.tables=list(day_night=mod_results(eff.list[["day_night"]],
+                                          group="study_ID",
+                                          mod = "treatment_effectiveness_metric",
+                                          at = list(exposure = c(1))),
+                    open_day=mod_results(eff.list[["open_day"]],
+                                          group="study_ID",
+                                          mod = "treatment_effectiveness_metric",
+                                          at = list(exposure = c(0.5))),
+                    open_night=mod_results(eff.list[["open_night"]],
+                                         group="study_ID",
+                                         mod = "treatment_effectiveness_metric",
+                                         at = list(exposure = c(0.5))))
 
-###main-text (Figure 2)
-#day vs night effectiveness metric plot
-#dn.ove.plot=ove.mod.plots[[1]]+
-#  scale_color_manual(values=c("white","white","white","white","white"))+
-#  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-#  plot.theme+
-#  theme(aspect.ratio = 0.2,
-#        legend.position="none",
-#        axis.title=element_blank(),
-#        axis.text.x = element_blank(),
-#        axis.ticks.x = element_blank(),
-#        axis.title.x = element_blank())+
-#  scale_x_discrete(labels=c("Overall"))
+eff.mod.plots=lapply(eff.mod.tables,function (x) orchard_sans_pi(x,group="study_ID",legend.pos = "none",
+                                                                 k.pos="right",mod = "treatment_effectiveness_metric",xlab="SMD",
+                                                                 tree.order=(c("Seed set","Seed mass","Pollen deposition","Fruit set",
+                                                                               "Fruit mass"))))
 
 dn.eff.plot=eff.mod.plots[[1]]+
   scale_color_manual(values=c("white","white","white","white","white"))+
@@ -305,58 +338,25 @@ dn.eff.plot=eff.mod.plots[[1]]+
         legend.position="none")+
   labs(y="Diel pollination difference (SMD)")
 
-#ggsave(rbind(ggplotGrob(dn.ove.plot),ggplotGrob(dn.eff.plot+ 
-#                                                  draw_image("images/noun-day-1327879.png",
-#                                                             y = -5,x=0.15,scale=1.5)+
-#                                                  draw_image("images/noun-night-1330487.png",
-#                                                             y = 4.1,x=0.1,scale=1.5))), 
-#       file="figures/Figure 3 June5.jpg", width=5, height=5, units="in", dpi=600)
 ggsave(dn.eff.plot+ 
          draw_image("images/noun-day-1327879.png",
                     y = -5,x=0.15,scale=1.5)+
          draw_image("images/noun-night-1330487.png",
                     y = 4.1,x=0.1,scale=1.5), 
-file="figures/Figure 3 June5.jpg", width=5, height=4, units="in", dpi=600)
+       file="figures/Figure 3 Oct4.jpg", width=5, height=4, units="in", dpi=600)
 
 ###supplementary (Figure A2.1)
 #Open pollination comparisons - effectiveness metric plot
 
-#no.ove.plot=ove.mod.plots2[[2]]+
-#  scale_color_manual(values=c("white","white","white","white","white"))+
-#  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-#  theme(aspect.ratio = 0.25,
-#        plot.caption = element_text(hjust = 0),
-#        text=element_text(family="Times New Roman",size=8),
-#        title=element_text(face="bold",size=8),
-#        axis.ticks.y = element_blank(),
-#        axis.text.y = element_blank(),
-#        axis.text.x = element_blank(),
-#        axis.title.x = element_blank(),
-#        axis.ticks.x = element_blank(),
-#        axis.title=element_text(face="bold"))+
-#  ggtitle("B) Night vs. open pollination")+
-#  xlab(NULL)+
-#  ylab(NULL)
+eff.mod.plots2=lapply(eff.mod.tables[2:3],function (x) orchard_sans_pi(x,group="study_ID",legend.pos = "none",
+                                                                 k.pos="left",mod = "treatment_effectiveness_metric",xlab="SMD",
+                                                                 tree.order=(c("Seed set","Seed mass","Pollen deposition","Fruit set",
+                                                                               "Fruit mass"))))
 
-#do.ove.plot=ove.mod.plots2[[3]]+
-#  scale_color_manual(values=c("white","white","white","white","white"))+
-#  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-#  theme(aspect.ratio = 0.25,
-#        text=element_text(family="Times New Roman",size=8),
-#        title=element_text(face="bold",size=8),
-#        axis.text=element_text(size=8),
-#        axis.title=element_blank(),
-#        axis.text.y = element_text(size=8),
-#        axis.text.x = element_blank(),
-#        axis.ticks.x = element_blank(),
-#        axis.title.x = element_blank())+
-#  ggtitle("A) Day vs. open pollination")+
-#  ylab("Standardised Mean Difference")+
-#  scale_x_discrete(labels=c("Overall"))
+eff.mod.tables[["open_day"]]
+eff.mod.tables[["open_night"]]
 
-#open.ove.plot.out=cbind(ggplotGrob(do.ove.plot),ggplotGrob(no.ove.plot))
-
-no.eff.plot=eff.mod.plots2[[2]]+
+no.eff.plot=eff.mod.plots2[["open_night"]]+
   scale_color_manual(values=c("white","white","white","white","white"))+
   scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
   plot.theme+
@@ -373,7 +373,7 @@ no.eff.plot=eff.mod.plots2[[2]]+
   ylab(NULL)+
   labs(y="Diel pollination difference (SMD)")
 
-do.eff.plot=eff.mod.plots2[[3]]+
+do.eff.plot=eff.mod.plots2[["open_day"]]+
   scale_color_manual(values=c("white","white","white","white","white"))+
   scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
   plot.theme+
@@ -383,18 +383,15 @@ do.eff.plot=eff.mod.plots2[[3]]+
         axis.text=element_text(size=8),
         axis.text.y = element_text(hjust=1,size=8),
         legend.position="none")+
-    ggtitle("A) Day vs. open pollination")+
+  ggtitle("A) Day vs. open pollination")+
   labs(y="Diel pollination difference (SMD)")
 
 open.eff.plot.out=cbind(ggplotGrob(do.eff.plot),ggplotGrob(no.eff.plot))
 
-#ggsave(rbind(open.ove.plot.out,open.eff.plot.out), 
-#       file="figures/Figure A2-1 June5.jpg", 
-#       width=6, height=5, units="in", dpi=600)
-
 ggsave(open.eff.plot.out, 
-       file="figures/Figure A2-3 June5.jpg", 
+       file="figures/Figure A2-3 Oct4.jpg", 
        width=6, height=5, units="in", dpi=600)
+
 ###########
 #Figure 4, Table S2, Figure A2.4
 #Significance of plant functional traits and environmental variables on diel pollination differences 
@@ -414,14 +411,13 @@ for (i in 1:length(all.trait.mod.list)){
   trait=word(names(all.trait.mod.list)[i],1)
   treatment=word(names(all.trait.mod.list)[i],2)
   linear=word(names(all.trait.mod.list)[i],3)
-  
   delta=round(AIC(all.trait.mod.list[[i]])-AIC(overall.list[[treatment]]),3)
   QM=round(all.trait.mod.list[[i]]$QM,3)
   QMdf=round(all.trait.mod.list[[i]]$QMdf[1],3)
-  QMp=round(all.trait.mod.list[[i]]$QMp,3)
+  QMp=all.trait.mod.list[[i]]$QMp
   QE=round(all.trait.mod.list[[i]]$QE,3)
   QEdf=round(all.trait.mod.list[[i]]$QEdf,3)
-  QEp=round(all.trait.mod.list[[i]]$QEp,3)
+  QEp=all.trait.mod.list[[i]]$QEp
   r2m=round(r2_ml(all.trait.mod.list[[i]])[1] %>% as.numeric,3)
   r2c=round(r2_ml(all.trait.mod.list[[i]])[2] %>% as.numeric,3)
   
@@ -431,6 +427,18 @@ for (i in 1:length(all.trait.mod.list)){
 #combine to df
 mod.table.df=data.table::rbindlist(mod.table)
 
+###remove delta for poll.dep
+mod.table.df=mod.table.df %>% 
+  mutate(delta=ifelse(trait%in%"poll.dep",NA,delta))
+#adjust p-values for multiple testing within each comparison
+mod.table.df=mod.table.df %>% 
+  group_by(treatment) %>% 
+  mutate(n=length(QMp)) %>% 
+  mutate(Qm.adj=p.adjust(QMp,method="BY")) %>% 
+  mutate(Qm.adj.r=round(Qm.adj,4)) %>% 
+  ungroup()
+
+round(mod.table.df$Qm.adj,4)
 #assign group (Trait or environment)
 mod.table.df$env=ifelse(mod.table.df$trait%in%c("sDTR","sDaylength","sElevation"),
                         "Environment",
@@ -438,7 +446,9 @@ mod.table.df$env=ifelse(mod.table.df$trait%in%c("sDTR","sDaylength","sElevation"
 
 mod.table.df$trait=ifelse(mod.table.df$linear%in%"quadratic",paste(mod.table.df$trait,"^2"),mod.table.df$trait)
 
-mod.table.df$sign=ifelse(mod.table.df$QMp<0.05,"*","")
+#mod.table.df$sign=ifelse(mod.table.df$delta<(-2),"*","")
+mod.table.df$sign=ifelse(mod.table.df$Qm.adj<(0.05),"*","")
+
 
 mod.table.df$treatment=revalue(mod.table.df$treatment,
                                c("day_night"="Day vs. night",
@@ -467,7 +477,7 @@ mod.table.df$trait=revalue(mod.table.df$trait,
                              "poll.dep ^2" = "Pollination dependency^2",
                              "poll.dep" = "Pollination dependency"))
 
-write.csv(mod.table.df,"output/Model summary table June5.csv",row.names=FALSE)
+write.csv(mod.table.df,"output/Model summary table Oct3.csv",row.names=FALSE)
 
 ##Figure 4
 #Ordered bar graph of Marginal R^2 for each trait or environmental variable
@@ -508,7 +518,7 @@ mod.plot=mod.table.df %>%
   theme(aspect.ratio=2,
         legend.position = "none")
 
-ggsave(mod.plot,file="figures/Figure 4 June5.jpg",width=5,height=5,unit="in",dpi=600)
+ggsave(mod.plot,file="figures/Figure 4 Oct4.jpg",width=5,height=5,unit="in",dpi=600)
 
 ####Figure A2.4
 ###Ordered bar graph of Marginal R^2 for each trait or environmental variable for both open pollination comparisons
@@ -598,7 +608,7 @@ mod.bars3=mod.table.df %>%
 
 #combine and save as single plot
 ggsave(cbind(ggplotGrob(mod.bars2),ggplotGrob(mod.bars3)),
-       file="figures/Figure A2-4 June5.jpg",width=6,height=4,unit="in",dpi=600)
+       file="figures/Figure A2-4 Oct4.jpg",width=6,height=4,unit="in",dpi=600)
 
 ###########
 
@@ -608,7 +618,7 @@ ggsave(cbind(ggplotGrob(mod.bars2),ggplotGrob(mod.bars3)),
 ######
 #Figure 5
 
-ele.dn.bub=mod_results(cont.env.trait.mod.list[["sElevation day_night quadratic"]], mod = "sElevation", 
+ele.dn.bub=mod_results(cont.env.trait.mod.list[["sElevation day_night quadratic"]], mod = "sElevation", at=list(exposure=1),
                        group = "study_ID",
                        weights = "prop")
 
@@ -650,7 +660,7 @@ e.dn.plot <-ggplot2::ggplot() +
                                                                attr(ele.scale,"scaled:center")), 
                        ggplot2::aes(x = moderator, y = estimate,col=condition), 
                        col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-  ggplot2::labs(x = "Elevation (m)", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
+  ggplot2::labs(x = "Elevation (m.a.s.l.)", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
   ggplot2::guides(fill = "none", colour = "none") +
   ggplot2::geom_hline(yintercept=0,linetype="dashed") +
   
@@ -673,33 +683,24 @@ e.dn.plot <-ggplot2::ggplot() +
 
 e.dn.plot
 
-ggsave(e.dn.plot,file="figures/Figure 5 June5.jpg", width=5, height=5, units="in", dpi=600)
+ggsave(e.dn.plot,file="figures/Figure 5 Oct4.jpg", width=5, height=5, units="in", dpi=600)
 
 #supplementary elevation plots
 
-ele.on.bub=mod_results(cont.env.trait.mod.list[["sElevation open_night quadratic"]], mod = "sElevation", 
-                       group = "study_ID",#by="treatment",
-                       #at=list(treatment="open_day"),
-                       weights = "prop")
-ele.od.bub=mod_results(cont.env.trait.mod.list[["sElevation open_day quadratic"]], mod = "sElevation", 
+ele.on.bub=mod_results(cont.env.trait.mod.list[["sElevation open_night quadratic"]], mod = "sElevation", at=list(exposure=0.5),
                        group = "study_ID",#by="treatment",
                        #at=list(treatment="open_day"),
                        weights = "prop")
 
 e.on.data_trim <- ele.on.bub$data
-e.od.data_trim <- ele.od.bub$data
 
 e.on.data_trim$moderator=e.on.data_trim$moderator*attr(ele.scale,"scaled:scale")+attr(ele.scale,"scaled:center")
-e.od.data_trim$moderator=e.od.data_trim$moderator*attr(ele.scale,"scaled:scale")+attr(ele.scale,"scaled:center")
 
 e.on.data_trim$scale <- (1/sqrt(e.on.data_trim[,"vi"]))
-e.od.data_trim$scale <- (1/sqrt(e.od.data_trim[,"vi"]))
 
 e.on.group_num <- as.vector(by(e.on.data_trim, e.on.data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-e.od.group_num <- as.vector(by(e.od.data_trim, e.od.data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
 
 e.on.dat_text <- data.frame(K = nrow(e.on.data_trim), G = length(unique(e.on.data_trim$stdy)))
-e.od.dat_text <- data.frame(K = nrow(e.od.data_trim), G = length(unique(e.od.data_trim$stdy)))
 
 e.on.plot <-ggplot2::ggplot() +
   # putting bubbles
@@ -712,46 +713,6 @@ e.on.plot <-ggplot2::ggplot() +
   ggplot2::geom_smooth(data = ele.on.bub$mod_table%>% mutate(moderator=moderator*attr(ele.scale,"scaled:scale")+attr(ele.scale,"scaled:center")), 
                        ggplot2::aes(x = moderator, y = estimate,col=condition), 
                        col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-  ggplot2::labs(x = "Elevation (m)", y = "Standardised Mean Difference", size = legend, parse = TRUE) +
-  ggplot2::guides(fill = "none", colour = "none") +
-  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
-  
-  # themses
-  ggplot2::theme_bw()  +
-  ggplot2::theme(aspect.ratio = 1,
-                 text=element_text(family="Times New Roman"),
-                 strip.background = element_blank(),
-                 strip.text = element_text(face="bold"),
-                 title=element_text(face="bold",size=9),
-                 axis.title=element_text(face="bold"),
-                 axis.ticks.y=element_blank(),
-                 axis.text.y=element_blank(),
-                 # axis.title.x=element_blank(),
-                 axis.title.y = element_blank()) +
-  ggplot2::geom_text(data = e.on.dat_text,
-                     mapping = ggplot2::aes(x = Inf, y = -Inf),
-                     label =  paste("italic(k)==", e.on.dat_text$K,
-                                    "~","(", e.on.dat_text$G, ")"),
-                     family="Times New Roman",
-                     parse = TRUE,
-                     hjust   = 1.1,
-                     vjust   = -0.5,
-                     size=3)+
-  ggtitle("B) Night vs. open pollination")+
-  ylim(-6,3.5)
-
-e.od.plot <-ggplot2::ggplot() +
-  # putting bubbles
-  ggplot2::geom_point(data = e.od.data_trim, ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
-  # confidence interval
-  ggplot2::geom_ribbon(data = ele.od.bub$mod_table%>% mutate(moderator=moderator*attr(ele.scale,"scaled:scale")+attr(ele.scale,"scaled:center")), 
-                       ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
-                       lwd = 1, alpha=0.25,fill = "black",
-                       colour = NA) +
-  # main line
-  ggplot2::geom_smooth(data = ele.od.bub$mod_table%>% mutate(moderator=moderator*attr(ele.scale,"scaled:scale")+attr(ele.scale,"scaled:center")), 
-                       ggplot2::aes(x = moderator, y = estimate,col=condition),
-                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
   ggplot2::labs(x = "Elevation (m)", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
   ggplot2::guides(fill = "none", colour = "none") +
   ggplot2::geom_hline(yintercept=0,linetype="dashed") +
@@ -763,21 +724,20 @@ e.od.plot <-ggplot2::ggplot() +
                  strip.background = element_blank(),
                  strip.text = element_text(face="bold"),
                  title=element_text(face="bold",size=9),
-                 axis.title=element_text(face="bold")) +
-  ggplot2::geom_text(data = e.od.dat_text,
+                 axis.title=element_text(face="bold"),
+                 axis.ticks.y=element_blank())+
+  ggplot2::geom_text(data = e.on.dat_text,
                      mapping = ggplot2::aes(x = Inf, y = -Inf),
-                     label =  paste("italic(k)==", e.od.dat_text$K,
-                                    "~","(", e.od.dat_text$G, ")"),
+                     label =  paste("italic(k)==", e.on.dat_text$K,
+                                    "~","(", e.on.dat_text$G, ")"),
                      family="Times New Roman",
                      parse = TRUE,
                      hjust   = 1.1,
-                     vjust   = -0.5,size=3)+
-  ggtitle("A) Day vs. open pollination")+
+                     vjust   = -0.5,
+                     size=3)+
   ylim(-6,3.5)
 
-ele.plots=cbind(ggplotGrob(e.od.plot),ggplotGrob(e.on.plot))# %>% plot
-ggsave(ele.plots,file="figures/Figure A2-5 June5.jpg", width=6, height=4, units="in", dpi=600)
-
+ggsave(e.on.plot,file="figures/Figure A2-5 Oct4.jpg", width=5, height=5, units="in", dpi=600)
 
 
 #####
@@ -788,7 +748,8 @@ ggsave(ele.plots,file="figures/Figure A2-5 June5.jpg", width=6, height=4, units=
 #Figure 6: effect of odour, bloom period (anthesis time), color and pollination dependency
 
 #odour
-odour_tab_out <- mod_results(cat.trait.mod.list[["odour day_night"]], 
+odour_tab_out <- mod_results(cat.trait.mod.list[["odour day_night"]],
+                             at=list(exposure=1),
                              group = "study_ID", 
                              mod = "odour")
 
@@ -797,7 +758,7 @@ odour_orchard=orchard_sans_pi(odour_tab_out, xlab = "Standardised Mean Differenc
                               tree.order = c("Present","Absent"))
 
 #colour
-colour_tab_out<- mod_results(cat.trait.mod.list[["color day_night"]], 
+colour_tab_out<- mod_results(cat.trait.mod.list[["color day_night"]], at=list(exposure=1),
                              group = "study_ID", 
                              mod = "color")
 
@@ -807,55 +768,13 @@ colour_orchard=orchard_sans_pi(colour_tab_out, xlab = "Diel pollination differen
                                               "Green"))
 
 #bloom period
-bloom_tab_out<- mod_results(cat.trait.mod.list[["bloom_period_simple day_night"]], 
+bloom_tab_out<- mod_results(cat.trait.mod.list[["bloom_period_simple day_night"]], at=list(exposure=1),
                             group = "study_ID", 
                             mod = "bloom_period_simple")
 
 bloom_orchard=orchard_sans_pi(bloom_tab_out, xlab = "Diel pollination difference (SMD)",
                               legend.pos ="bottom.out",k.pos = c("left"),
                               tree.order = c("Night","Day","Both"))
-
-#pollination dependency (bubble plot)
-pd.bub=mod_results(DvN.PD.mod, mod = "pd.imp.all", 
-                   group = "study_ID",
-                   weights = "prop")
-
-data_trim <- pd.bub$data
-data_trim$scale <- (1/sqrt(data_trim[,"vi"]))
-legend <- "Precision (1/SE)"
-
-group_num <- as.vector(by(data_trim, data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-
-dat_text <- data.frame(K = nrow(data_trim), G = length(unique(data_trim$stdy)))
-
-poll.dep.plot <-ggplot2::ggplot() +
-  # putting bubbles
-  ggplot2::geom_point(data = data_trim, ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
-  # confidence interval
-  ggplot2::geom_ribbon(data = pd.bub$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
-                       lwd = 1, alpha=0.25,fill = "black",
-                       colour = NA) +
-  # main line
-  ggplot2::geom_smooth(data = pd.bub$mod_table, 
-                       ggplot2::aes(x = moderator, y = estimate,col=condition), 
-                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-  ggplot2::labs(x = "Pollination dependency", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
-  ggplot2::guides(fill = "none", colour = "none") +
-  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
-  
-  # themses
-  ggplot2::theme_bw()  +
-  plot.theme+
-  ggplot2::theme(aspect.ratio = 1)+
-  ggplot2::geom_text(data = dat_text,
-                     mapping = ggplot2::aes(x = Inf, y = -Inf),
-                     label =  paste("italic(k)==", dat_text$K,
-                                    "~","(", dat_text$G, ")"),
-                     family="Times New Roman",
-                     parse = TRUE,
-                     hjust   = 1.1,
-                     vjust   = -0.5,
-                     size=3)
 
 ###odour
 odo.dn.plot=odour_orchard+
@@ -864,7 +783,9 @@ odo.dn.plot=odour_orchard+
   plot.theme+
   theme(aspect.ratio = 0.5,
         text=element_text(family="Times New Roman"),
-        title=element_text(face="bold",size=10),
+        title=element_text(face="bold",size=9),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
         #subtitle=element_text(face="bold",size=8),
         legend.position = "none",
         #axis.text.y = element_text(size=8),
@@ -904,6 +825,9 @@ bp.dn.plot=bloom_orchard+
         text=element_text(family="Times New Roman"),
         title=element_text(face="bold",size=9),
         legend.position = "none",
+        axis.text.x=element_blank(),
+        axis.title.x=element_blank(),
+        axis.ticks.x = element_blank(),
         axis.text.y = element_text(size=8),
         axis.title.y=element_blank(),)+
   
@@ -913,116 +837,17 @@ bp.dn.plot=bloom_orchard+
   draw_image("images/night.png",
              y = 3.8,x=0.25,scale=0.75)
 
-ggsave(cbind(rbind(ggplotGrob(odo.dn.plot),ggplotGrob(col.dn.plot)),
-             rbind(ggplotGrob(bp.dn.plot),ggplotGrob(poll.dep.plot+
-                                                       #ylab("Standard")+
-                                                       #xlab("Pollinat")+
-                                                       theme(
-                                                         title=element_text(face="bold",size=9),
-                                                         axis.title = element_text(face="bold",size=9),
-                                                         axis.text.y = element_text(size=8),
-                                                         axis.text.x = element_text(size=8))+
-                                                       labs(title=NULL,
-                                                            subtitle = "iv) Pollination dependency")+ 
-                                                       draw_image("images/day.png",
-                                                                  y = -5.1,x=-1.5,scale=0.75) +
-                                                       draw_image("images/night.png",
-                                                                  y = 3.25,x=-1.5,scale=0.75)))),
-       file="figures/Figure 6 June5.jpg",width=7,height=5,dpi=600,units="in")
-
-#Figure A2.6 - day vs open pollination differences in relation to traits
+ggsave(rbind(ggplotGrob(odo.dn.plot),ggplotGrob(bp.dn.plot),
+             ggplotGrob(col.dn.plot)
+             ),
+       file="figures/Figure 6 Oct4.jpg",width=4,height=7,dpi=600,units="in")
 
 
-lf_do_tab_out <- mod_results(cat.trait.mod.list[["life_form open_day"]], 
-                             group = "study_ID", 
-                             mod = "life_form")
-
-lf_do_orchard=orchard_sans_pi(lf_do_tab_out, xlab = "Diel pollination difference (SMD)",
-                              legend.pos ="bottom.out",k.pos = c("left"),
-                              tree.order = c("Vine","Tree","Shrub","Herb"))
-
-lf.do.plot=lf_do_orchard+
-  scale_color_manual(values=c("white","white","white","white","white"))+
-  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 0.75,
-        text=element_text(family="Times New Roman"),
-        title=element_text(face="bold",size=9),
-        legend.position = "none",
-        axis.title=element_blank())+
-  labs(title=NULL,subtitle = "i) Life form")
-
-
-sh_do_tab_out <- mod_results(cat.trait.mod.list[["flower_shape open_day"]], 
-                             group = "study_ID", 
-                             mod = "flower_shape")
-
-sh_do_orchard=orchard_sans_pi(sh_do_tab_out, xlab = "Diel pollination difference (SMD)",
-                              legend.pos ="bottom.out",k.pos = c("left"),
-                              tree.order = c("Tube","Papilionaceous","Open","Campanulate","Brush"))
-
-sha.do.plot=sh_do_orchard+
-  scale_color_manual(values=c("white","white","white","white","white"))+
-  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 1.25,
-        text=element_text(family="Times New Roman"),
-        title=element_text(face="bold",size=9),
-        legend.position = "none",
-        axis.title.x=element_blank())+
-  labs(title="",
-       subtitle="ii) Flower shape")
-
-bp_do_tab_out <- mod_results(cat.trait.mod.list[["bloom_period_simple open_day"]], 
-                             group = "study_ID", 
-                             mod = "bloom_period_simple")
-
-bp_do_orchard=orchard_sans_pi(bp_do_tab_out, xlab = "Diel pollination difference (SMD)",
-                              legend.pos ="bottom.out",k.pos = c("left"),
-                              tree.order = c("Night","Day","Both"))
-
-bp.do.plot=bp_do_orchard+
-  scale_color_manual(values=c("white","white","white","white","white","white","white"))+
-  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 0.5,
-        text=element_text(family="Times New Roman"),
-        title=element_text(face="bold",size=9),
-        legend.position = "none",
-        axis.title.y=element_blank())+
-  labs(title=NULL,subtitle = NULL)+
-  labs(title="",
-       subtitle="iii) Anthesis time")
-
-ps_do_tab_out <- mod_results(cat.trait.mod.list[["ps_pathway open_day"]], 
-                             group = "study_ID", 
-                             mod = "ps_pathway")
-
-ps_do_orchard=orchard_sans_pi(ps_do_tab_out, xlab = "Diel pollination difference (SMD)",
-                              legend.pos ="bottom.out",k.pos = c("left"),
-                              tree.order = c("C3","CAM"))
-
-psp.do.plot=ps_do_orchard+
-  scale_color_manual(values=c("white","white","white","white","white"))+
-  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 0.5,
-        text=element_text(family="Times New Roman"), 
-        title=element_text(face="bold",size=9),
-        legend.position = "none",
-        axis.title.x=element_text(face="bold"))+
-  labs(title="",
-       subtitle="iv) Photosynthetic pathway")
-
-do.trait.plots=rbind(cbind(ggplotGrob(lf.do.plot),
-                           ggplotGrob(sha.do.plot)),
-                     cbind(ggplotGrob(bp.do.plot),
-                           ggplotGrob(psp.do.plot))) #%>% plot
-
-ggsave(do.trait.plots,file="figures/Figure A2-6 June5.jpg",width=8,height=6,dpi=600,device="jpg")
-
-
-#Figure A2.7 - night vs open pollination differences in relation to traits
+#Figure A2.6 - night vs open pollination differences in relation to traits
 
 
 #odour
-od_no_tab_out <- mod_results(cat.trait.mod.list[["odour open_night"]], 
+od_no_tab_out <- mod_results(cat.trait.mod.list[["odour open_night"]], at=list(exposure=0.5),
                              group = "study_ID", 
                              mod = "odour")
 
@@ -1033,108 +858,20 @@ od_no_orchard=orchard_sans_pi2(od_no_tab_out, xlab = "Diel pollination differenc
 od.no.plot=od_no_orchard+
   scale_color_manual(values=c("white","white","white","white","white"))+
   scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 0.75,
+  theme(aspect.ratio = 0.5,
         text=element_text(family="Times New Roman",size=8),
         title=element_text(face="bold",size=9),
         legend.position = "none",
         axis.text.y = element_text(family="Times New Roman",size=8),
-        axis.text.x=element_text(family="Times New Roman",size=8),
-        axis.title.y=element_blank())+
-  labs(title=NULL,
-       subtitle = "i) Odour")
+        axis.text.x=element_text(family="Times New Roman",size=8))+#,
+        #axis.title.y=element_blank())+
+  labs(title=NULL)+
+  xlab("Odour")#,
+     #  subtitle = "i) Odour")
 
-#flower colour
-col_no_tab_out <- mod_results(cat.trait.mod.list[["color open_night"]], 
-                              group = "study_ID", 
-                              mod = "color")
-
-col_no_orchard=orchard_sans_pi2(col_no_tab_out, xlab = "Diel pollination difference (SMD)",
-                                legend.pos ="bottom.out",k.pos = c("left"),
-                                tree.order = c("Brown_yellow","White","Red","Blue_purple","Pink","Orange","Green"))
-
-
-col.no.plot=col_no_orchard+
-  scale_color_manual(values=c("white","white","white","white","white","white","white"))+
-  scale_fill_manual(values=c("darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey","darkgrey"))+
-  theme(aspect.ratio = 0.75,
-        text=element_text(family="Times New Roman",size=8),
-        title=element_text(face="bold",size=9),
-        legend.position = "none",
-        axis.text.y = element_text(family="Times New Roman",size=8),
-        axis.text.x=element_text(family="Times New Roman",size=8),
-        axis.title.y=element_blank())+
-  labs(title=NULL,
-       subtitle = "ii) Flower colour")+
-  scale_x_discrete(labels=c("Yellow","White","Red","Purple","Pink","Orange","Green"))
-
-
-#plant height
-ph.on.bub=mod_results(cont.env.trait.mod.list[["sPlant_height open_night linear"]], mod = "sPlant_height", 
-                      group = "study_ID",
-                      weights = "prop")
-
-ph.on.data_trim <- ph.on.bub$data
-
-ph.scale=es.list$dvn_effects %>% 
-  filter(treatment%in%c("day_night","open_day","open_night"))%>%
-  filter(yi > -10 & yi < 10) %>% 
-  select(plant_height_midpoint_m) %>% 
-  mutate(ph.scale=scale(plant_height_midpoint_m))
-
-ph.scale=ph.scale$ph.scale
-
-ph.on.data_trim$moderator=ph.on.data_trim$moderator*attr(ph.scale,"scaled:scale")+attr(ph.scale,"scaled:center")
-
-ph.on.data_trim$scale <- (1/sqrt(ph.on.data_trim[,"vi"]))
-
-ph.on.group_num <- as.vector(by(ph.on.data_trim, ph.on.data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-
-ph.on.dat_text <- data.frame(K = nrow(ph.on.data_trim), G = length(unique(ph.on.data_trim$stdy)))
-
-ph.on.plot <-ggplot2::ggplot() +
-  # putting bubbles
-  ggplot2::geom_point(data = ph.on.data_trim, 
-                      ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
-  # confidence interval
-  ggplot2::geom_ribbon(data = ph.on.bub$mod_table%>% mutate(moderator=moderator*attr(ph.scale,"scaled:scale")+attr(ph.scale,"scaled:center")), 
-                       ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
-                       lwd = 1, alpha=0.25,fill = "black",
-                       colour = NA) +
-  # main line
-  ggplot2::geom_smooth(data = ph.on.bub$mod_table%>% mutate(moderator=moderator*attr(ph.scale,"scaled:scale")+attr(ph.scale,"scaled:center")), 
-                       ggplot2::aes(x = moderator, y = estimate,col=condition), 
-                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-  ggplot2::labs(x = "Plant height (m)", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
-  ggplot2::guides(fill = "none", colour = "none") +
-  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
-  
-  # themses
-  ggplot2::theme_bw()  +
-  ggplot2::theme(aspect.ratio = 1,
-                 text=element_text(family="Times New Roman",size=8),
-                 axis.text=element_text(family="Times New Roman",size=8),
-                 axis.text.x=element_text(family="Times New Roman",size=8),
-                 strip.background = element_blank(),
-                 strip.text = element_text(face="bold"),
-                 title=element_text(face="bold",size=9),
-                 axis.title=element_text(face="bold"))+
-  ggplot2::geom_text(data = e.on.dat_text,
-                     mapping = ggplot2::aes(x = Inf, y = -Inf),
-                     label =  paste("italic(k)==", e.on.dat_text$K,
-                                    "~","(", e.on.dat_text$G, ")"),
-                     family="Times New Roman",
-                     parse = TRUE,
-                     hjust   = 1.1,
-                     vjust   = -0.5,
-                     size=2)+
-  labs(title=NULL,
-       subtitle = "iii) Plant height")
-
-ggsave(cbind(ggplotGrob(od.no.plot),
-             ggplotGrob(col.no.plot),
-             ggplotGrob(ph.on.plot)),
-       file="figures/Figure A2-7 June5.jpg",
-       width=8,height=4,device="jpg",dpi=600)
+ggsave(od.no.plot,
+       file="figures/Figure A2-6 Oct4.jpg",
+       width=5,height=4,device="jpg",dpi=600)
 
 ######
 ####Funnel plots (Figure A1-3, A2-8)
@@ -1174,7 +911,7 @@ dvn.funnel=ggplot(data=overall.list[["day_night"]]$data,
         text=element_text(family="Times New Roman",size=9),
         title=element_text(face="bold",size=10))
 
-ggsave(dvn.funnel,file="figures/Figure A1-3 June5.jpg",width=4,height=4,units="in",dpi=600)
+ggsave(dvn.funnel,file="figures/Figure A1-5 June5.jpg",width=4,height=4,units="in",dpi=600)
 
 ####Figure A2.6
 
@@ -1263,3 +1000,146 @@ summary(time.lag.list[["day_night"]])
 #supplement
 summary(time.lag.list[["open_day"]])
 summary(time.lag.list[["open_night"]])
+
+
+#####additional diel quotient plots
+ratio.bub=mod_results(overall.list[[1]], mod = "exposure", 
+                      group = "study_ID",
+                      weights = "prop")
+
+ratio.bub2=mod_results(overall.list[[2]], mod = "exposure", 
+                       group = "study_ID",
+                       weights = "prop")
+
+ratio.bub3=mod_results(overall.list[[3]], mod = "exposure", 
+                       group = "study_ID",
+                       weights = "prop")
+
+data_trim <- ratio.bub$data
+data_trim2 <- ratio.bub2$data
+data_trim3 <- ratio.bub3$data
+
+data_trim$scale <- (1/sqrt(data_trim[,"vi"]))
+data_trim2$scale <- (1/sqrt(data_trim2[,"vi"]))
+data_trim3$scale <- (1/sqrt(data_trim3[,"vi"]))
+
+legend <- "Precision (1/SE)"
+
+group_num <- as.vector(by(data_trim, data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
+group_num2 <- as.vector(by(data_trim2, data_trim2[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
+group_num3 <- as.vector(by(data_trim3, data_trim3[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
+
+
+dat_text <- data.frame(K = nrow(data_trim), G = length(unique(data_trim$stdy)))
+dat_text2 <- data.frame(K = nrow(data_trim2), G = length(unique(data_trim2$stdy)))
+dat_text3 <- data.frame(K = nrow(data_trim3), G = length(unique(data_trim3$stdy)))
+
+
+ratio.plot <-ggplot2::ggplot() +
+  # putting bubbles
+  ggplot2::geom_point(data = data_trim, ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
+  # confidence interval
+  ggplot2::geom_ribbon(data = ratio.bub$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
+                       lwd = 1, alpha=0.25,fill = "black",
+                       colour = NA) +
+  # main line
+  ggplot2::geom_smooth(data = ratio.bub$mod_table, 
+                       ggplot2::aes(x = moderator, y = estimate,col=condition), 
+                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
+  ggplot2::labs(x = "Diel quotient", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
+  ggplot2::guides(fill = "none", colour = "none") +
+  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
+  
+  # themses
+  ggplot2::theme_bw()  +
+  plot.theme+
+  ggplot2::theme(aspect.ratio = 1)+
+  ggplot2::geom_text(data = dat_text,
+                     mapping = ggplot2::aes(x = Inf, y = -Inf),
+                     label =  paste("italic(k)==", dat_text$K,
+                                    "~","(", dat_text$G, ")"),
+                     family="Times New Roman",
+                     parse = TRUE,
+                     hjust   = 1.1,
+                     vjust   = -0.5,
+                     size=3)+ 
+  draw_image("images/day.png",
+             y = -5.075,x=-0.14,scale=0.75) +
+  draw_image("images/night.png",
+             y = 3.75,x=-0.15,scale=0.75)
+#ggtitle("A) Day vs. night pollination")
+ratio.plot
+
+ggsave(ratio.plot,file="figures/Figure A1-3 Oct4.jpg", width=5, height=5, units="in", dpi=600)
+
+
+#ratio.plot2 <-ggplot2::ggplot() +
+#  # putting bubbles
+#  ggplot2::geom_point(data = data_trim2, ggplot2::aes(x = moderator, y = yi, 
+#                                                      size = scale, fill = condition), 
+#                      fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
+#  # confidence interval
+#  ggplot2::geom_ribbon(data = ratio.bub2$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
+#                       lwd = 1, alpha=0.25,fill = "black",
+#                       colour = NA) +
+#  # main line
+#  ggplot2::geom_smooth(data = ratio.bub2$mod_table, 
+#                       ggplot2::aes(x = moderator, 
+#                                    y = estimate,col=condition), 
+#                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
+#  ggplot2::labs(x = "Diel quotient", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
+#  ggplot2::guides(fill = "none", colour = "none") +
+#  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
+#  # themses
+#  ggplot2::theme_bw()  +
+#  plot.theme+
+#  ggplot2::theme(aspect.ratio = 1,
+#                 axis.title.y=element_blank())+
+#  ggplot2::geom_text(data = dat_text2,
+#                     mapping = ggplot2::aes(x = Inf, y = -Inf),
+#                     label =  paste("italic(k)==", dat_text2$K,
+#                                    "~","(", dat_text2$G, ")"),
+#                     family="Times New Roman",
+#                     parse = TRUE,
+#                     hjust   = 1.1,
+#                     vjust   = -0.5,
+#                     size=3)+
+#  ggtitle("C) Night vs. open pollination")
+#
+#
+#
+#ratio.plot3 <-ggplot2::ggplot() +
+#  # putting bubbles
+#  ggplot2::geom_point(data = data_trim3, ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
+#  # confidence interval
+#  ggplot2::geom_ribbon(data = ratio.bub3$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
+#                       lwd = 1, alpha=0.25,fill = "black",
+#                       colour = NA) +
+#  # main line
+#  ggplot2::geom_smooth(data = ratio.bub3$mod_table, 
+#                       ggplot2::aes(x = moderator, y = estimate,col=condition), 
+#                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
+#  ggplot2::labs(x = "Diel quotient", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
+#  ggplot2::guides(fill = "none", colour = "none") +
+#  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
+#  
+#  # themses
+#  ggplot2::theme_bw()  +
+#  plot.theme+
+#  ggplot2::theme(aspect.ratio = 1,
+#                 axis.title.y=element_blank())+
+#  ggplot2::geom_text(data = dat_text3,
+#                     mapping = ggplot2::aes(x = Inf, y = -Inf),
+#                     label =  paste("italic(k)==", dat_text3$K,
+#                                    "~","(", dat_text3$G, ")"),
+#                     family="Times New Roman",
+#                     parse = TRUE,
+#                     hjust   = 1.1,
+#                     vjust   = -0.5,
+#                     size=3)+
+#  ggtitle("B) Day vs. open pollination")
+#
+#
+#
+#ggsave(cbind(ggplotGrob(ratio.plot),ggplotGrob(ratio.plot3),ggplotGrob(ratio.plot2)),
+#       file="figures/Figure SX - diel quotient NOT INCLUDED.jpg",width=8,height=6)

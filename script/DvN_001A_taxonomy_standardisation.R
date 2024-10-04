@@ -2,9 +2,7 @@
 
 #run during set-up
 
-#run the following line to find world plant database or WFO.download() to get WFO.data the first
 WFO.download(timeout=100^9)
-#WorldFlora::WFO.remember(WFO.file = "WFO_Backbone.zip", WFO.data = "WFO.data", WFO.pos = 1)
 
 diel.tax.df=diel.final
 
@@ -25,17 +23,6 @@ length(setdiff(plants.wfo.one$plant_species,plants.wfo.one$scientificName))
 
 ####accepted species names
 plants.wfo.one
-
-##trait database
-#plant.traits.df=diel.raw %>% 
-#  distinct(study_ID,journal,DOI,plant_species) %>% 
-#  filter(plant_species%in%diel.final$plant_species) %>% #11 species filtered here 
-#  left_join(plants.wfo.one)%>% 
-#  rename(old_name=plant_species,
-#         accepted_name=scientificName,
-#         family=family) 
-
-#write.csv(plant.traits.df,"DvN_Plant_Species_Study_List.csv")
 
 #####
 plant.taxonomy.df=plants.wfo.one%>% 

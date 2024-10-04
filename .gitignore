@@ -4,12 +4,11 @@
 .Ruserdata
 
 data/old_data
-figures/old_figures
+figures/old_figs
 output/old_output
 script/old_script
 
 classification.csv
-
 WFO_Backbone.zip
 
 June7_submission.rData

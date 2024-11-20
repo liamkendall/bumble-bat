@@ -1,17 +1,27 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 005 - Model fitting with metafor
 
-###load from DvN_003_analysis_dataframe_setup.R
+####libraries (CRAN)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(phytools)
+library(metafor)
+library(ggplot2)
 
-load(file="output/DvN_analysis_dataframe Sep16.RData")
-diel.all.diffs
-load(file="output/DvN_plant_phylogeny Sep16.RData")
-diel.tree.out
+###load analysis dataframes (DvN_003)
+load(file="output/DvN_analysis_dataframe final.RData")
+load(file="output/DvN_polldep_analysis_dataframe final.RData")
 
+###load effect size and predictor variable dataframe (DvN_001)
+load("output/DvN_effect_size_dataframe final.rData")
 
+###load phylogeny
+load(file="output/DvN_plant_phylogeny final.RData")
 
 ##################
 ##Diel pollination differences: overall meta-analytic model
@@ -46,7 +56,7 @@ for(i in treatment.levels){
   
 }
 
-save(overall.list,file="output/DvN_meta_analytical_models Sep16.RData")
+save(overall.list,file="output/DvN_meta_analytical_models final.RData")
 
 #######################
 ##Meta-analysis: Pollination dependency of plant species
@@ -62,7 +72,6 @@ pd.vcv <- vcv(pd.tree, cor = T)
 
 pd.full <- rma.mv(yi = yi, 
                    V = vi,
-                  # mods = ~ treatment_effectiveness_metric+exposure,
                    random = list(
                      ~1|study_ID,
                      ~1|effect_ID,
@@ -72,7 +81,7 @@ pd.full <- rma.mv(yi = yi,
                    R = list(phylo = pd.vcv),
                    data = poll.dep.es)
 
-save(pd.full,file="output/DvN_pollination_dependency_meta_model Sep16.RData")
+save(pd.full,file="output/DvN_pollination_dependency_meta_model final.RData")
 
 ######################
 ##Meta-regression: Diel pollination difference models as a function of pollination effectiveness metric
@@ -107,8 +116,7 @@ for(i in treatment.levels){
   
 }
 
-save(eff.list,file="output/DvN_meta_regression_metric_models Sep16.RData")
-
+save(eff.list,file="output/DvN_meta_regression_metric_models final.RData")
 
 ######################
 ##Meta-regression: Day vs. night pollination as a function of pollination dependency
@@ -144,7 +152,7 @@ DvN.PD.mod <- rma.mv(yi,vi,mods = ~ poll.dep + I(poll.dep^2)+exposure,
 poll.dep.mods=list(`poll.dep day_night linear`=DvN.PD.mod0,
                    `poll.dep day_night quadratic`=DvN.PD.mod)
 
-save(poll.dep.mods,file="output/DvN_meta_regression_pollination_dependency_models Sep16.RData")
+save(poll.dep.mods,file="output/DvN_meta_regression_pollination_dependency_models final.RData")
 
 #####
 #Meta-regression: Day vs. night (vs. open) pollination as a function of categorical plant traits
@@ -191,7 +199,7 @@ for(h in 1:length(cat.traits)){
 }
 
 #save model list
-save(cat.trait.mod.list,file="output/DvN_meta_regression_categorical_trait_models Sep16.RData")
+save(cat.trait.mod.list,file="output/DvN_meta_regression_categorical_trait_models final.RData")
 
 #####
 #Meta-regression: Day vs. night (vs. open) pollination as a function of continuous plant traits (linear) and environmental variables (linear and quadratic)
@@ -248,7 +256,7 @@ for(h in 1:length(cont.env.traits)){
   }
 }
 
-save(cont.env.trait.mod.list,file="output/DvN_meta_regression_continuous_trait_environment_models Sep16.RData")
+save(cont.env.trait.mod.list,file="output/DvN_meta_regression_continuous_trait_environment_models final.RData")
 
 
 #####
@@ -302,5 +310,5 @@ for(i in treatment.levels){
   
 }
 
-save(egger.list,file="output/DvN_publication_bias_egger_models June5.RData")
-save(time.lag.list,file="output/DvN_publication_bias_time_lag_models June5.RData")
+save(egger.list,file="output/DvN_publication_bias_egger_models final.RData")
+save(time.lag.list,file="output/DvN_publication_bias_time_lag_models final.RData")

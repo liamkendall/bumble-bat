@@ -1,15 +1,18 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 003A - Assessment of correlation among predictor variables
 
-#additional libraries
+#libraries (CRAN)
+library(plyr)
 library(tidyverse)
 library(rcompanion)
 require(corrr)
 library(ggcorrplot)
 
+#####load data (from DvN_002)
+load("output/DvN_effect_size_dataframe final.rData")
 
 # Calculate a pairwise association between all variables in a data-frame. In particular nominal vs nominal with Chi-square, numeric vs numeric with Pearson correlation, and nominal vs numeric with ANOVA.
 # Adopted from https://stackoverflow.com/a/52557631/590437
@@ -56,12 +59,12 @@ mixed_assoc = function(df, cor_method="spearman", adjust_cramersv_bias=TRUE){
 }
 
 #traits
-traits.cor.out=mixed_assoc(traits %>% select(-c(bloom_period,plant_family,old_name,plant_species)))%>%
+traits.cor.out=mixed_assoc(es.list$traits %>% select(-c(bloom_period,plant_family,old_name,plant_species)))%>%
   #if assoc is negative, make it positive
   mutate(assoc=ifelse(assoc<0,assoc*-1,assoc))
 
 ##environment (study-site level)
-environment.cors=environment %>% select(study_ID,Daylength,elevation,DTR) %>% 
+environment.cors=es.list$environment %>% select(study_ID,Daylength,elevation,DTR) %>% 
   distinct(study_ID,Daylength,elevation,DTR) %>%
   select(-study_ID) %>% 
   mixed_assoc()%>%
@@ -140,6 +143,18 @@ traits.cor.mat=traits.cor.mat %>% select(-x) %>% as.matrix()
 
 mat.ord=traits.cor.mat[c(3,4,5,7,10,17,15,1,2,6,8:9,11:14,16),c(3,4,5,7,10,17,15,1,2,6,8:9,11:14,16)]
 
+#plot theme
+#####GGPLOT theme
+plot.theme=theme(
+  legend.position = "bottom",
+  axis.text = element_text(size = 10),
+  text=element_text(family="Times New Roman"),
+  axis.title = element_text(size = 12,face="bold"),
+  legend.title = element_text(size = 12,face="bold"),
+  legend.text = element_text(size = 10),
+  plot.title = element_text(size = 12,face="bold", hjust = 0))
+
+#plot
 mat.plot.out=ggcorrplot(mat.ord,type="upper",lab = TRUE,lab_size=2,legend.title = "Association")+ 
     scale_fill_gradient2(low = "white", high = "black", 
                          breaks=c(0, 0.25,0.5,0.75, 1), limit=c(0, 1))+
@@ -151,7 +166,8 @@ mat.plot.out=ggcorrplot(mat.ord,type="upper",lab = TRUE,lab_size=2,legend.title 
   theme(axis.title=element_blank(),
         axis.ticks = element_blank())
 
+#save plot
 ggsave(mat.plot.out,
-       file="figures/Figure A1-2 June5.jpg",
+       file="figures/Figure A1-2 final.jpg",
        width=6,height=6,dpi=600)
 

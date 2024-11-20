@@ -1,14 +1,32 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 006 - Model reporting
 
-
-###additional libraries
+####libraries (CRAN)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(phytools)
+library(metafor)
+library(ggplot2)
 library(cowplot)
-library(ggtree)
 library(tidytree)
+
+#non-cran libraries
+#to install ggtree
+#devtools::install_bioc("ggtree") v.3.12.0
+#to install orchaRd
+#devtools::install_github("daniel1noble/orchaRd") v.2.0
+
+#load non-cran libraries
+library(ggtree)
+library(orchaRd)
+
+#additional functions
+source('script/DvN_additional_functions.R')
 
 #####GGPLOT theme
 plot.theme=theme(
@@ -20,17 +38,29 @@ plot.theme=theme(
   legend.text = element_text(size = 10),
   plot.title = element_text(size = 12,face="bold", hjust = 0))
 
-#####
-#####Calculate heterogeneity (I^2) for meta-analytic models of each diel pollination difference
 
 #load models
-load("output/DvN_meta_analytical_models Sep16.RData")
-load("output/DvN_meta_regression_categorical_trait_models Sep16.RData")
-load("output/DvN_meta_regression_continuous_trait_environment_models Sep16.RData")
-load("output/DvN_meta_regression_pollination_dependency_models Sep16.RData")
+load("output/DvN_meta_analytical_models final.RData")
+load("output/DvN_meta_regression_categorical_trait_models final.RData")
+load("output/DvN_meta_regression_metric_models final.RData")
+load("output/DvN_meta_regression_continuous_trait_environment_models final.RData")
+load("output/DvN_meta_regression_pollination_dependency_models final.RData")
+load("output/DvN_pollination_dependency_meta_model final.RData")
+load("output/DvN_publication_bias_egger_models final.RData")
+load("output/DvN_publication_bias_time_lag_models final.RData")
 
-#model list name
-overall.list
+#load analysis dataframes
+load(file="output/DvN_analysis_dataframe final.RData")
+load(file="output/DvN_polldep_analysis_dataframe final.RData")
+
+###load effect size and predictor variable dataframe (DvN_001)
+load("output/DvN_effect_size_dataframe final.rData")
+
+###load phylogeny
+load(file="output/DvN_plant_phylogeny final.RData")
+
+#####
+#####Calculate heterogeneity (I^2) for meta-analytic models of each diel pollination difference
 
 ## # estimating I2 as measure of heterogeneity
 #day vs night (main text)
@@ -40,7 +70,7 @@ i2_ma.on <- i2_ml(overall.list[[2]])
 #open vs day (supplementary)
 i2_ma.od <- i2_ml(overall.list[[3]])
 
-#####FIGURE SX. Pollination dependency
+#####FIGURE A1-4. Pollination dependency
 poll.dep.mod.table = mod_results(pd.full,group="study_ID")
 
 pd.mod.plot=orchard_sans_pi(poll.dep.mod.table,
@@ -60,10 +90,8 @@ pd.mod.plot=orchard_sans_pi(poll.dep.mod.table,
 
 pd.mod.plot
 
-ggsave(pd.mod.plot,file="figures/Figure A1-4 Oct4.jpg",
+ggsave(pd.mod.plot,file="figures/Figure A1-4 final.jpg",
        dpi=600,width=5,height=3,units="in")
-
-
 
 #####Figure 2 (Figures A2.1 & A2.2)
 ###Phylogeny + model-estimates (and phylogenetic signal) of species-level diel pollination differences
@@ -293,13 +321,13 @@ for (i in 1:length(trts)){
 }
 #save plots
 ggsave(phylo.gg.list[["day_night"]],
-       file="figures/Figure 2 Oct4.jpg",
+       file="figures/Figure 2 final.jpg",
        dpi=600,height=10,width=8.3,units="in")
 ggsave(phylo.gg.list[["open_day"]],
-       file="figures/Figure A2-1 Oct4.jpg",
+       file="figures/Figure A2-1 final.jpg",
        dpi=600,height=10,width=8.3,units="in")
 ggsave(phylo.gg.list[["open_night"]],
-       file="figures/Figure A2-2 Oct4.jpg",
+       file="figures/Figure A2-2 final.jpg",
        dpi=600,height=10,width=8.3,units="in")
 
 
@@ -343,7 +371,7 @@ ggsave(dn.eff.plot+
                     y = -5,x=0.15,scale=1.5)+
          draw_image("images/noun-night-1330487.png",
                     y = 4.1,x=0.1,scale=1.5), 
-       file="figures/Figure 3 Oct4.jpg", width=5, height=4, units="in", dpi=600)
+       file="figures/Figure 3 final.jpg", width=5, height=4, units="in", dpi=600)
 
 ###supplementary (Figure A2.1)
 #Open pollination comparisons - effectiveness metric plot
@@ -389,7 +417,7 @@ do.eff.plot=eff.mod.plots2[["open_day"]]+
 open.eff.plot.out=cbind(ggplotGrob(do.eff.plot),ggplotGrob(no.eff.plot))
 
 ggsave(open.eff.plot.out, 
-       file="figures/Figure A2-3 Oct4.jpg", 
+       file="figures/Figure A2-3 final.jpg", 
        width=6, height=5, units="in", dpi=600)
 
 ###########
@@ -477,7 +505,7 @@ mod.table.df$trait=revalue(mod.table.df$trait,
                              "poll.dep ^2" = "Pollination dependency^2",
                              "poll.dep" = "Pollination dependency"))
 
-write.csv(mod.table.df,"output/Model summary table Oct3.csv",row.names=FALSE)
+write.csv(mod.table.df,"output/Model summary table final.csv",row.names=FALSE)
 
 ##Figure 4
 #Ordered bar graph of Marginal R^2 for each trait or environmental variable
@@ -518,7 +546,7 @@ mod.plot=mod.table.df %>%
   theme(aspect.ratio=2,
         legend.position = "none")
 
-ggsave(mod.plot,file="figures/Figure 4 Oct4.jpg",width=5,height=5,unit="in",dpi=600)
+ggsave(mod.plot,file="figures/Figure 4 final.jpg",width=5,height=5,unit="in",dpi=600)
 
 ####Figure A2.4
 ###Ordered bar graph of Marginal R^2 for each trait or environmental variable for both open pollination comparisons
@@ -608,7 +636,7 @@ mod.bars3=mod.table.df %>%
 
 #combine and save as single plot
 ggsave(cbind(ggplotGrob(mod.bars2),ggplotGrob(mod.bars3)),
-       file="figures/Figure A2-4 Oct4.jpg",width=6,height=4,unit="in",dpi=600)
+       file="figures/Figure A2-4 final.jpg",width=6,height=4,unit="in",dpi=600)
 
 ###########
 
@@ -683,7 +711,7 @@ e.dn.plot <-ggplot2::ggplot() +
 
 e.dn.plot
 
-ggsave(e.dn.plot,file="figures/Figure 5 Oct4.jpg", width=5, height=5, units="in", dpi=600)
+ggsave(e.dn.plot,file="figures/Figure 5 final.jpg", width=5, height=5, units="in", dpi=600)
 
 #supplementary elevation plots
 
@@ -737,7 +765,7 @@ e.on.plot <-ggplot2::ggplot() +
                      size=3)+
   ylim(-6,3.5)
 
-ggsave(e.on.plot,file="figures/Figure A2-5 Oct4.jpg", width=5, height=5, units="in", dpi=600)
+ggsave(e.on.plot,file="figures/Figure A2-5 final.jpg", width=5, height=5, units="in", dpi=600)
 
 
 #####
@@ -840,7 +868,7 @@ bp.dn.plot=bloom_orchard+
 ggsave(rbind(ggplotGrob(odo.dn.plot),ggplotGrob(bp.dn.plot),
              ggplotGrob(col.dn.plot)
              ),
-       file="figures/Figure 6 Oct4.jpg",width=4,height=7,dpi=600,units="in")
+       file="figures/Figure 6 final.jpg",width=4,height=7,dpi=600,units="in")
 
 
 #Figure A2.6 - night vs open pollination differences in relation to traits
@@ -870,11 +898,11 @@ od.no.plot=od_no_orchard+
      #  subtitle = "i) Odour")
 
 ggsave(od.no.plot,
-       file="figures/Figure A2-6 Oct4.jpg",
+       file="figures/Figure A2-6 final.jpg",
        width=5,height=4,device="jpg",dpi=600)
 
 ######
-####Funnel plots (Figure A1-3, A2-8)
+####Funnel plots (Figure A1-3, A2-7)
 ######
 
 #Day vs night pollination (Figure A1-3)
@@ -911,7 +939,7 @@ dvn.funnel=ggplot(data=overall.list[["day_night"]]$data,
         text=element_text(family="Times New Roman",size=9),
         title=element_text(face="bold",size=10))
 
-ggsave(dvn.funnel,file="figures/Figure A1-5 June5.jpg",width=4,height=4,units="in",dpi=600)
+ggsave(dvn.funnel,file="figures/Figure A1-5 final.jpg",width=4,height=4,units="in",dpi=600)
 
 ####Figure A2.6
 
@@ -983,9 +1011,9 @@ nvo.funnel=ggplot(data=overall.list[["open_night"]]$data,
 
 open.funs=cbind(ggplotGrob(dvo.funnel),ggplotGrob(nvo.funnel))
 
-ggsave(open.funs,file="figures/Figure A2-8 June5.jpg",width=6, height=4,units="in",dpi=600)
+ggsave(open.funs,file="figures/Figure A2-7 final.jpg",width=6, height=4,units="in",dpi=600)
 
-######reporting values from Egger tests and time-lag models
+######reporting values from Egger tests and time-lag models (publication bias)
 
 #main text
 summary(egger.list[["day_night"]])
@@ -1001,39 +1029,20 @@ summary(time.lag.list[["day_night"]])
 summary(time.lag.list[["open_day"]])
 summary(time.lag.list[["open_night"]])
 
-
 #####additional diel quotient plots
 ratio.bub=mod_results(overall.list[[1]], mod = "exposure", 
                       group = "study_ID",
                       weights = "prop")
 
-ratio.bub2=mod_results(overall.list[[2]], mod = "exposure", 
-                       group = "study_ID",
-                       weights = "prop")
-
-ratio.bub3=mod_results(overall.list[[3]], mod = "exposure", 
-                       group = "study_ID",
-                       weights = "prop")
-
 data_trim <- ratio.bub$data
-data_trim2 <- ratio.bub2$data
-data_trim3 <- ratio.bub3$data
 
 data_trim$scale <- (1/sqrt(data_trim[,"vi"]))
-data_trim2$scale <- (1/sqrt(data_trim2[,"vi"]))
-data_trim3$scale <- (1/sqrt(data_trim3[,"vi"]))
 
 legend <- "Precision (1/SE)"
 
 group_num <- as.vector(by(data_trim, data_trim[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-group_num2 <- as.vector(by(data_trim2, data_trim2[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-group_num3 <- as.vector(by(data_trim3, data_trim3[,"stdy"], function(x) base::length(base::unique(x[,"stdy"]))))
-
 
 dat_text <- data.frame(K = nrow(data_trim), G = length(unique(data_trim$stdy)))
-dat_text2 <- data.frame(K = nrow(data_trim2), G = length(unique(data_trim2$stdy)))
-dat_text3 <- data.frame(K = nrow(data_trim3), G = length(unique(data_trim3$stdy)))
-
 
 ratio.plot <-ggplot2::ggplot() +
   # putting bubbles
@@ -1067,79 +1076,7 @@ ratio.plot <-ggplot2::ggplot() +
              y = -5.075,x=-0.14,scale=0.75) +
   draw_image("images/night.png",
              y = 3.75,x=-0.15,scale=0.75)
-#ggtitle("A) Day vs. night pollination")
+
 ratio.plot
 
-ggsave(ratio.plot,file="figures/Figure A1-3 Oct4.jpg", width=5, height=5, units="in", dpi=600)
-
-
-#ratio.plot2 <-ggplot2::ggplot() +
-#  # putting bubbles
-#  ggplot2::geom_point(data = data_trim2, ggplot2::aes(x = moderator, y = yi, 
-#                                                      size = scale, fill = condition), 
-#                      fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
-#  # confidence interval
-#  ggplot2::geom_ribbon(data = ratio.bub2$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
-#                       lwd = 1, alpha=0.25,fill = "black",
-#                       colour = NA) +
-#  # main line
-#  ggplot2::geom_smooth(data = ratio.bub2$mod_table, 
-#                       ggplot2::aes(x = moderator, 
-#                                    y = estimate,col=condition), 
-#                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-#  ggplot2::labs(x = "Diel quotient", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
-#  ggplot2::guides(fill = "none", colour = "none") +
-#  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
-#  # themses
-#  ggplot2::theme_bw()  +
-#  plot.theme+
-#  ggplot2::theme(aspect.ratio = 1,
-#                 axis.title.y=element_blank())+
-#  ggplot2::geom_text(data = dat_text2,
-#                     mapping = ggplot2::aes(x = Inf, y = -Inf),
-#                     label =  paste("italic(k)==", dat_text2$K,
-#                                    "~","(", dat_text2$G, ")"),
-#                     family="Times New Roman",
-#                     parse = TRUE,
-#                     hjust   = 1.1,
-#                     vjust   = -0.5,
-#                     size=3)+
-#  ggtitle("C) Night vs. open pollination")
-#
-#
-#
-#ratio.plot3 <-ggplot2::ggplot() +
-#  # putting bubbles
-#  ggplot2::geom_point(data = data_trim3, ggplot2::aes(x = moderator, y = yi, size = scale, fill = condition), fill = "darkgrey",shape = 21, col="white",alpha = 0.5,show.legend = F) +
-#  # confidence interval
-#  ggplot2::geom_ribbon(data = ratio.bub3$mod_table, ggplot2::aes(x = moderator, ymin = lowerCL,ymax=upperCL,fill=condition), #method =  "loess", formula = y~x,se = FALSE,lty = "dashed", 
-#                       lwd = 1, alpha=0.25,fill = "black",
-#                       colour = NA) +
-#  # main line
-#  ggplot2::geom_smooth(data = ratio.bub3$mod_table, 
-#                       ggplot2::aes(x = moderator, y = estimate,col=condition), 
-#                       col="black",method =  "loess", formula = y~x, se = FALSE, lwd = 1) +
-#  ggplot2::labs(x = "Diel quotient", y = "Diel pollination difference (SMD)", size = legend, parse = TRUE) +
-#  ggplot2::guides(fill = "none", colour = "none") +
-#  ggplot2::geom_hline(yintercept=0,linetype="dashed") +
-#  
-#  # themses
-#  ggplot2::theme_bw()  +
-#  plot.theme+
-#  ggplot2::theme(aspect.ratio = 1,
-#                 axis.title.y=element_blank())+
-#  ggplot2::geom_text(data = dat_text3,
-#                     mapping = ggplot2::aes(x = Inf, y = -Inf),
-#                     label =  paste("italic(k)==", dat_text3$K,
-#                                    "~","(", dat_text3$G, ")"),
-#                     family="Times New Roman",
-#                     parse = TRUE,
-#                     hjust   = 1.1,
-#                     vjust   = -0.5,
-#                     size=3)+
-#  ggtitle("B) Day vs. open pollination")
-#
-#
-#
-#ggsave(cbind(ggplotGrob(ratio.plot),ggplotGrob(ratio.plot3),ggplotGrob(ratio.plot2)),
-#       file="figures/Figure SX - diel quotient NOT INCLUDED.jpg",width=8,height=6)
+ggsave(ratio.plot,file="figures/Figure A1-3 final.jpg", width=5, height=5, units="in", dpi=600)

@@ -1,28 +1,20 @@
-####Kendall & Nicholson 2024. Pollination across the diel cycle
-####Script 1. Data input and effect size calculation
+#title: "Pollination across the diel cycle: a global meta-analysis"
+#authors: L Kendall & C.C. Nicholson
+#date: "20/11/2024"
 
-####Libraries
-###Wrangle data to wide format
+####script: 001 - Data cleaning and curation
+
+####libraries (CRAN)
 library(plyr)
 library(dplyr)
 library(tidyr)
 library(stringr)
-
-###phylo/taxonomy packages
 library(WorldFlora)
 library(phytools)
-#library(rtrees)
-#library(V.PhyloMaker2)
-
-###meta-analysis
 library(metafor)
-
-###plotting
-library(orchaRd)
 library(ggplot2)
 
-#bespoke functions
-#binomial summary stats, simplified orchard plots
+#additional functions
 source('script/DvN_additional_functions.R')
 
 #load raw data
@@ -232,7 +224,6 @@ diel.final=diel.out %>%
          effectiveness_value,
          SDc) 
 
-
 #run script to check and validate plant names
 source('script/DvN_001A_taxonomy_standardisation.R')
 
@@ -317,7 +308,6 @@ setdiff(rownames(traits),
 
 setdiff(unique(diel.env.final$accepted_name),
         rownames(traits))
-#BRA!
 
 #combine 
 diel.env.final.out=diel.env.final %>% 
@@ -335,4 +325,7 @@ sum(is.na(diel.env.final.out$plant_species)) #0
 diel.env.final.out %>% 
   summarise_all(~sum(is.na(.)))
 
-save(diel.env.final.out,file="output/DvN_raw_dataframe_pre_effect_size_calculation Sep16.RData")
+#save data files
+save(diel.env.final.out,file="output/DvN_raw_dataframe_pre_effect_size_calculation final.RData")
+save(traits,file="output/DvN_trait data final.RData")
+save(environment,file="output/DvN_environmental data final.RData")

@@ -1,13 +1,19 @@
-####fix taxonomy for plant species
+#title: "Pollination across the diel cycle: a global meta-analysis"
+#authors: L Kendall & C.C. Nicholson
+#date: "20/11/2024"
 
-#run during set-up
+###script: 001A - Standardisation of plant taxonomy
+#runs within script: DvN_001
 
+#Download plant taxonomy database
+##This function can take a very long time to download. If you have issues downloading it using this function, we suggest that you downloaded independently from https://www.worldfloraonline.org/downloadData and use the WFO.remember function. 
 WFO.download(timeout=100^9)
 
 diel.tax.df=diel.final
 
 plants=data.frame(plant_species=unique(diel.tax.df$plant_species))
 
+#match plant species in df to WFO database
 plants.wfo=WFO.match(spec.data=plants, 
                      spec.name="plant_species",
                      WFO.data=WFO.data, 
@@ -18,7 +24,7 @@ plants.wfo=WFO.match(spec.data=plants,
 plants.wfo.one=WFO.one(plants.wfo,priority = "Accepted") %>% 
   select(plant_species,scientificName,family)#
 
-#20 changed
+#20 species changed
 length(setdiff(plants.wfo.one$plant_species,plants.wfo.one$scientificName))
 
 ####accepted species names
@@ -56,5 +62,3 @@ plant.taxonomy.df$accepted_name=ifelse(plant.taxonomy.df$old_name%in%"Silene alb
                                        plant.taxonomy.df$accepted_name)
 
 #done
-
-

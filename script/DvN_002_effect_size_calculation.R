@@ -1,6 +1,6 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 002 - Effect size (SMD) calculation
 
@@ -8,10 +8,19 @@
 ###Effect size calculations###
 ##############################
 
+#libraries (CRAN)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(metafor)
+
 #load dataframe from DvN_001
-load(file="output/DvN_raw_dataframe_pre_effect_size_calculation Sep16.RData")
+load(file="output/DvN_raw_dataframe_pre_effect_size_calculation final.RData")
+
+#loaded file
 diel.env.final.out
 
+#rename file
 diel.es=diel.env.final.out
 
 #widen dataframe
@@ -29,8 +38,9 @@ diel.esc.1=diel.es %>% group_by(study_ID,
               values_from=c(sample_size,SDc,effectiveness_value)) %>% 
   ungroup() #%>% 
 
-####day-night effect sizes
-#effect sizes
+####calculate effect sizes
+# day vs. night
+
 day.night.es=escalc(data=diel.esc.1,
                   measure="SMD",
                   #day pollination (control)
@@ -46,7 +56,7 @@ day.night.es=escalc(data=diel.esc.1,
   filter(!is.na(yi)) %>% 
   mutate(treatment="day_night")
 
-###open vs. night 354
+#open vs. night
 open.night.es=escalc(data=diel.esc.1,
              measure="SMD",
              #open pollination (control)
@@ -62,7 +72,7 @@ open.night.es=escalc(data=diel.esc.1,
   filter(!is.na(yi)) %>% 
   mutate(treatment="open_night")
 
-###open vs. day  346
+#open vs. day 
 open.day.es=escalc(data=diel.esc.1,
                      measure="SMD",
                      #open pollination (control)
@@ -94,7 +104,7 @@ bag.open.es=escalc(data=diel.esc.1,
   filter(!is.na(yi)) %>% 
   mutate(treatment="bag_open")
 
-###cbind the g's
+###cbind the effect size dataframes
 diel.es.out=rbind.fill(day.night.es,
                   open.night.es,
                   open.day.es,
@@ -102,12 +112,18 @@ diel.es.out=rbind.fill(day.night.es,
   mutate(effect_ID=1:n()) %>% 
   relocate(effect_ID,.after = study_ID)
 
-###effect size dataframes is in long format and then saved as an rData file in the data folder
+#reload environment and trait dataframes
+load(file="output/DvN_trait data final.RData")
+load(file="output/DvN_environmental data final.RData")
+
+###place effect sizes, traits and environments into a list
 es.list=list(diel.es.out,
              environment,
              traits)
 
 #name list elements
 names(es.list)=c("dvn_effects","environment","traits")
-save(es.list,file="output/DvN_effect_size_dataframe Sep16.rData")
+
+#save list
+save(es.list,file="output/DvN_effect_size_dataframe final.rData")
 

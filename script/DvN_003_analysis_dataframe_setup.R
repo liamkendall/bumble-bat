@@ -1,6 +1,6 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 003 - final set-up for analysis and phylogeny generation
 
@@ -8,39 +8,31 @@
 #additional functions
 source('script/DvN_additional_functions.R')
 
-####Wrangle data to wide format
+####libraries (CRAN)
 library(plyr)
 library(dplyr)
 library(tidyr)
 library(stringr)
-
-#phylo/taxonomy packages
-library(WorldFlora)
 library(phytools)
-library("V.PhyloMaker2")
-
-#meta-analysis
 library(metafor)
-library(orchaRd)
-
-#plotting
 library(ggplot2)
 
-#####data input
-#this dataframe is a product of the set-up scripts
-load("output/DvN_effect_size_dataframe Sep16.rData")
+#non-cran libraries
+#to install non-cran libraries
+#library("devtools")
+#devtools::install_github("jinyizju/V.PhyloMaker2") v.0.1.0
+#devtools::install_github("daniel1noble/orchaRd") v.2.0
+
+#load non-cran libraries
+library("V.PhyloMaker2")
+library(orchaRd) 
+
+#####load data (from DvN_002)
+load("output/DvN_effect_size_dataframe final.rData")
 
 #### PREPARE DATA ####
 
-###calculate mean pollination dependency for each species that had bag open comparison
-#then calculate species level
-#and genus level
-
-#####
-#REMOVE?
-#####
-
-#dependency dataframe
+#subset bag vs. open contrasts (i.e. pollination dependency) for joining to main dataframe
 diel.dependency=es.list$dvn_effects %>% 
   filter(treatment == "bag_open")%>% 
 #  #rename yi and vi
@@ -116,9 +108,8 @@ poll.dep.es=es.list$dvn_effects %>% filter(treatment%in%"bag_open") %>%
   filter(yi > -10 & yi < 10)
 
 ###save dataframe and phylogeny
-save(diel.all.diffs,file="output/DvN_analysis_dataframe Sep16.RData")
-save(poll.dep.es,file="output/DvN_polldep_analysis_dataframe Sep16.RData")
-
-save(diel.tree.out,file="output/DvN_plant_phylogeny Sep16.RData")
+save(diel.all.diffs,file="output/DvN_analysis_dataframe final.RData")
+save(poll.dep.es,file="output/DvN_polldep_analysis_dataframe final.RData")
+save(diel.tree.out,file="output/DvN_plant_phylogeny final.RData")
 
 

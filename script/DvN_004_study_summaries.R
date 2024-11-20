@@ -1,18 +1,21 @@
 #title: "Pollination across the diel cycle: a global meta-analysis"
 #authors: L Kendall & C.C. Nicholson
-#date: "05/06/2024"
+#date: "20/11/2024"
 
 ###script: 004 - Summaries
 
-#additional libaries
+#libraries (CRAN)
+library(plyr)
+library(dplyr)
+library(tidyr)
 library(countrycode)
 
-###load from DvN_003_Analysis_dataframe_setup.R
-load(file="output/DvN_analysis_dataframe Sep16.RData")
-diel.all.diffs
-load(file="output/DvN_plant_phylogeny Sep16.RData")
-diel.tree.out
+###load analysis dataframes (DvN_003)
+load(file="output/DvN_analysis_dataframe final.RData")
+load(file="output/DvN_polldep_analysis_dataframe final.RData")
 
+#####load data (from DvN_002)
+load("output/DvN_effect_size_dataframe final.rData")
 
 ####Data summaries
 
@@ -21,19 +24,23 @@ effect.tots=diel.all.diffs %>%
   group_by(treatment) %>% 
   summarise(n=n())
 
+#number of studies
 study.tots=diel.all.diffs %>% 
   distinct(study_ID) %>% 
   summarise(n=n())
 
+#number of species
 species.tots=diel.all.diffs %>% 
   distinct(phylo) %>% 
   summarise(n=n())
 
+#species by treatment
 species.tots.trt=diel.all.diffs %>% 
   group_by(treatment) %>% 
   distinct(phylo) %>% 
   summarise(n=n())
 
+#by metric
 measure.tots=diel.all.diffs %>% 
   group_by(treatment_effectiveness_metric) %>% 
   summarise(n=n())
@@ -77,14 +84,14 @@ diel.all.diffs$continent=countrycode(diel.all.diffs$country, origin = "country.n
 
 #summarise continent by study
 continent.tots=diel.all.diffs %>% 
-  #if na change to Africa
+  #if na change to Africa (Canary Islands)
   mutate(continent=ifelse(is.na(continent),"Africa",continent)) %>% #Canary Islands
   distinct(study_ID,continent) %>% 
   group_by(continent) %>% 
   #summarise as percentage
   summarise(perc=n()/135,
             n=n())
-
+ 
 #summarise number of studies by treatment
 treatment.tots=diel.all.diffs %>% 
   distinct(study_ID,treatment) %>% 
@@ -104,9 +111,7 @@ crop.spp.tots=diel.all.diffs %>%
   summarise(n=n())
 
 ####pollination dependency summaries
-poll.dep.summaries=es.list$dvn_effects %>% filter(treatment%in%"bag_open") %>% 
-  filter(accepted_name%in%diel.all.diffs$accepted_name)
-
+poll.dep.summaries=poll.dep.es
 #species
 unique(poll.dep.es$accepted_name) %>% length
 #studies

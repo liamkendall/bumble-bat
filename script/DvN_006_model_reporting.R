@@ -41,6 +41,7 @@ plot.theme=theme(
 
 #load models
 load("output/DvN_meta_analytical_models final.RData")
+load("output/DvN_pub_bias_meta_analytical_models final.RData")
 load("output/DvN_meta_regression_categorical_trait_models final.RData")
 load("output/DvN_meta_regression_metric_models final.RData")
 load("output/DvN_meta_regression_continuous_trait_environment_models final.RData")
@@ -907,10 +908,10 @@ ggsave(od.no.plot,
 
 #Day vs night pollination (Figure A1-3)
 
-est1=overall.list[["day_night"]]$b[1]
-se1=overall.list[["day_night"]]$se[1]
+est1=pub.bias.ma.list[["day_night"]]$b[1]
+se1=pub.bias.ma.list[["day_night"]]$se[1]
 
-se.seq1=seq(0,max(sqrt(overall.list[["day_night"]]$data$vi)),length.out=100)
+se.seq1=seq(0,max(sqrt(pub.bias.ma.list[["day_night"]]$data$vi)),length.out=100)
 
 ll95.1=est1-1.96*se.seq1
 ul95.1=est1+1.96*se.seq1
@@ -920,7 +921,7 @@ meanul95.1=est1+1.96*se1
 
 df.fun1=data.frame(ll95.1,ul95.1,se.seq1,est1,meanll95.1,meanul95.1)
 
-dvn.funnel=ggplot(data=overall.list[["day_night"]]$data,
+dvn.funnel=ggplot(data=pub.bias.ma.list[["day_night"]]$data,
                   aes(y=yi,
                       x=sqrt(vi)))+
   geom_point(pch=21,fill="grey90",col="black",alpha=0.5,size=2)+
@@ -928,8 +929,8 @@ dvn.funnel=ggplot(data=overall.list[["day_night"]]$data,
   geom_line(aes(x = se.seq1, y = ul95.1), linetype = 'dashed', data = df.fun1) +
   
   geom_segment(aes(x = min(se.seq1), 
-                   y = overall.list[["day_night"]]$b[1], xend = max(se.seq1), 
-                   yend = overall.list[["day_night"]]$b[1]), linetype='dashed', data=df.fun1)+
+                   y = pub.bias.ma.list[["day_night"]]$b[1], xend = max(se.seq1), 
+                   yend = pub.bias.ma.list[["day_night"]]$b[1]), linetype='dashed', data=df.fun1)+
   xlab("Standard error")+
   ylab("Diel pollination difference (SMD)")+
   scale_x_reverse()+
@@ -944,10 +945,10 @@ ggsave(dvn.funnel,file="figures/Figure A1-5 final.jpg",width=4,height=4,units="i
 ####Figure A2.6
 
 #open vs day pollination
-est2=overall.list[["open_day"]]$b[1]
-se2=overall.list[["open_day"]]$se[1]
+est2=pub.bias.ma.list[["open_day"]]$b[1]
+se2=pub.bias.ma.list[["open_day"]]$se[1]
 
-se.seq2=seq(0,max(sqrt(overall.list[["open_day"]]$data$vi)),length.out=100)
+se.seq2=seq(0,max(sqrt(pub.bias.ma.list[["open_day"]]$data$vi)),length.out=100)
 
 ll95.2=est2-1.96*se.seq2
 ul95.2=est2+1.96*se.seq2
@@ -957,15 +958,15 @@ meanul95.2=est2+1.96*se2
 
 df.fun2=data.frame(ll95.2,ul95.2,se.seq2,est2,meanll95.2,meanul95.2)
 
-dvo.funnel=ggplot(data=overall.list[["open_day"]]$data,
+dvo.funnel=ggplot(data=pub.bias.ma.list[["open_day"]]$data,
                   aes(y=yi,
                       x=sqrt(vi)))+
   geom_point(pch=21,fill="grey90",col="black",alpha=0.5,size=2)+
   geom_line(aes(x = se.seq2, y = ll95.2), linetype = 'dashed', data = df.fun2) +
   geom_line(aes(x = se.seq2, y = ul95.2), linetype = 'dashed', data = df.fun2) +
   geom_segment(aes(x = min(se.seq2), 
-                   y = overall.list[["open_day"]]$b[1], xend = max(se.seq2), 
-                   yend = overall.list[["open_day"]]$b[1]), linetype='dashed', data=df.fun2)+
+                   y = pub.bias.ma.list[["open_day"]]$b[1], xend = max(se.seq2), 
+                   yend = pub.bias.ma.list[["open_day"]]$b[1]), linetype='dashed', data=df.fun2)+
   xlab("Standard error")+
   ylab("Diel pollination difference (SMD)")+
   scale_x_reverse()+
@@ -977,10 +978,10 @@ dvo.funnel=ggplot(data=overall.list[["open_day"]]$data,
         title=element_text(face="bold",size=8))
 
 #open vs night
-est3=overall.list[["open_night"]]$b[1]
-se3=overall.list[["open_night"]]$se[1]
+est3=pub.bias.ma.list[["open_night"]]$b[1]
+se3=pub.bias.ma.list[["open_night"]]$se[1]
 
-se.seq3=seq(0,max(sqrt(overall.list[["open_night"]]$data$vi)),length.out=100)
+se.seq3=seq(0,max(sqrt(pub.bias.ma.list[["open_night"]]$data$vi)),length.out=100)
 
 ll95.3=est3-1.96*se.seq3
 ul95.3=est3+1.96*se.seq3
@@ -990,15 +991,15 @@ meanul95.3=est3+1.96*se3
 
 df.fun3=data.frame(ll95.3,ul95.3,se.seq3,est3,meanll95.3,meanul95.3)
 
-nvo.funnel=ggplot(data=overall.list[["open_night"]]$data,
+nvo.funnel=ggplot(data=pub.bias.ma.list[["open_night"]]$data,
                   aes(y=yi,
                       x=sqrt(vi)))+
   geom_point(pch=21,fill="grey90",col="black",alpha=0.5,size=2)+
   geom_line(aes(x = se.seq3, y = ll95.3), linetype = 'dashed', data = df.fun3) +
   geom_line(aes(x = se.seq3, y = ul95.3), linetype = 'dashed', data = df.fun3) +
   geom_segment(aes(x = min(se.seq3), 
-                   y = overall.list[["open_night"]]$b[1], xend = max(se.seq3), 
-                   yend = overall.list[["open_night"]]$b[1]), linetype='dashed', data=df.fun3)+
+                   y = pub.bias.ma.list[["open_night"]]$b[1], xend = max(se.seq3), 
+                   yend = pub.bias.ma.list[["open_night"]]$b[1]), linetype='dashed', data=df.fun3)+
   xlab(NULL)+
   ylab("Diel pollination difference (SMD)")+
   scale_x_reverse()+

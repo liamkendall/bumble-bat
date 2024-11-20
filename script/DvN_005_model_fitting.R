@@ -58,6 +58,37 @@ for(i in treatment.levels){
 
 save(overall.list,file="output/DvN_meta_analytical_models final.RData")
 
+###pure meta-analysis models (i.e. without diel quotient) for visualising publication bias
+
+pub.bias.ma.list=list()
+
+for(i in treatment.levels){
+  
+  out.df=diel.all.diffs %>% 
+    filter(treatment %in% i)
+  
+  out.species=unique(out.df$phylo)
+  out.tree=drop.tip(diel.tree.out, setdiff(diel.tree.out$tip.label,
+                                           out.species))
+  out.vcv <- vcv(out.tree, cor = T)
+  
+  overall.full <- rma.mv(yi = yi, 
+                         V = vi,
+                         random = list(~1|treatment_effectiveness_metric,
+                                       ~1|study_ID,
+                                       ~1|effect_ID,
+                                       ~1|phylo,
+                                       ~1|accepted_name),
+                         R = list(phylo = out.vcv),
+                         data = out.df)
+  
+  pub.bias.ma.list[[i]]=overall.full
+  
+}
+
+save(pub.bias.ma.list,file="output/DvN_pub_bias_meta_analytical_models final.RData")
+
+
 #######################
 ##Meta-analysis: Pollination dependency of plant species
 ######################

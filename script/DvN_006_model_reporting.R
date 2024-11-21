@@ -125,8 +125,13 @@ for (i in 1:length(trts)){
   spp_re$phylo<-gsub(" ","_",rownames(spp_re))
   
   #get predictions
-  preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
   
+  if(trt.out %in%"day_night"){
+  preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
+  }
+  if(!trt.out %in%"day_night"){
+    preds<-predict.rma(overall.list[[trt.out]],newmods=c(0.5),addx=TRUE)
+  }
   #combine
   plotdat<-join(phylo_re,spp_re,by="phylo")
   plotdat$pred<-preds$pred
@@ -184,9 +189,12 @@ for (i in 1:length(trts)){
   
   plotdat<-join(phylo_re,spp_re,by="phylo")
   
-  #get predictions
-  preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
-  
+  if(trt.out %in%"day_night"){
+    preds<-predict.rma(overall.list[[trt.out]],newmods=c(1),addx=TRUE)
+  }
+  if(!trt.out %in%"day_night"){
+    preds<-predict.rma(overall.list[[trt.out]],newmods=c(0.5),addx=TRUE)
+  }
   plotdat$pred<-preds$pred
   plotdat$ci.ub<-preds$ci.ub
   plotdat$ci.lb<-preds$ci.lb
